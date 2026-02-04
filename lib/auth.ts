@@ -4,7 +4,7 @@ import { getAuthUser, isTokenExpired } from "./jwt";
 import { UserRole } from "./jwt";
 
 export async function requireAuth(): Promise<{
-  user: Awaited<ReturnType<typeof getAuthUser>>;
+  user: NonNullable<Awaited<ReturnType<typeof getAuthUser>>>;
   token: string;
 }> {
   const cookieStore = await cookies();
@@ -19,17 +19,46 @@ export async function requireAuth(): Promise<{
     redirect("/login");
   }
 
-  return { user, token };
+  return { user: user!, token };
 }
 
 export async function requireRole(role: UserRole) {
-  const { user } = await requireAuth();
+  console.log('🔒 requireRole: Checking for role:', role);
   
-  if (user.role !== role) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+  
+  console.log('🔒 requireRole: Token found:', !!token);
+
+  if (!token) {
+    console.log('🔒 requireRole: No token - redirecting to login');
+    redirect("/login");
+  }
+
+  // Fetch server-side pentru user info (ca în layout)
+  console.log('🔒 requireRole: Fetching user info...');
+  const res = await fetch("http://localhost:4000/me", {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  console.log('🔒 requireRole: Response status:', res.status);
+
+  if (!res.ok) {
+    console.log('🔒 requireRole: Invalid response - redirecting to login');
+    redirect("/login");
+  }
+
+  const userData = await res.json();
+  console.log('🔒 requireRole: User data:', userData);
+
+  if (userData.role !== role) {
+    console.log('🔒 requireRole: Wrong role - redirecting to unauthorized');
     redirect("/unauthorized");
   }
   
-  return user;
+  console.log('🔒 requireRole: Access granted');
+  return userData;
 }
 
 export function setAuthCookie(token: string) {

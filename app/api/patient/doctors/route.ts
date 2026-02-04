@@ -1,0 +1,33 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const token = authHeader.slice(7);
+    
+    // Forward request to auth-server
+    const response = await fetch("http://auth-server:4000/patient/doctors", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Error in patient doctors GET:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

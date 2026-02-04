@@ -1,0 +1,56 @@
+services:
+  next:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_AUTH_SERVER_URL: "http://localhost:4000"
+      NEXT_PUBLIC_RESOURCE_SERVER_URL: "http://localhost:5000"
+      AUTH_SERVER_URL: "http://localhost:4000"
+    ports:
+      - 3000:3000
+    depends_on:
+      - auth-server
+      - resource-server
+
+  auth-server:
+    build:
+      context: ../auth-server/app
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres?schema=public
+      PORT: 4000
+      AUTH_SERVER_URL: http://localhost:4000
+    ports:
+      - 4000:4000
+    depends_on:
+      - postgres
+
+  resource-server:
+    build:
+      context: ../resource-server/app
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres?schema=public
+      PORT: 5000
+      RESOURCE_SERVER_URL: http://localhost:5000
+      AUTH_SERVER_URL: http://localhost:4000
+    ports:
+      - 5000:5000
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - 5433:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

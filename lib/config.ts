@@ -3,6 +3,9 @@ export const config = {
     baseUrl: process.env.AUTH_SERVER_URL || "http://localhost:4000",
     clientId: process.env.CLIENT_ID || "nextjs_client",
   },
+  resourceServer: {
+    baseUrl: process.env.RESOURCE_SERVER_URL || "http://localhost:5000",
+  },
   jwt: {
     issuer: process.env.JWT_ISSUER || "http://localhost:4000",
     audience: process.env.JWT_AUDIENCE || "nextjs_client",

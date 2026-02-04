@@ -49,10 +49,18 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${config.authServer.baseUrl}${endpoint}`;
+  const baseUrl = config.authServer.baseUrl;
+  const url = `${baseUrl}${endpoint}`;
   
-  console.log("🔍 API Request - URL:", url);
+  console.log("🔍 API Request - Base URL:", baseUrl);
+  console.log("🔍 API Request - Endpoint:", endpoint);
+  console.log("🔍 API Request - Full URL:", url);
+  console.log("🔍 API Request - Method:", options.method || 'GET');
   console.log("🔍 API Request - Options:", options);
+  
+  if (!baseUrl) {
+    throw new ApiError("AUTH_SERVER_URL is not configured", 500);
+  }
   
   const response = await fetch(url, {
     headers: {
@@ -62,19 +70,42 @@ async function apiRequest<T>(
     ...options,
   });
 
+  console.log("🔍 API Response - URL:", url);
   console.log("🔍 API Response - Status:", response.status);
   console.log("🔍 API Response - StatusText:", response.statusText);
+  console.log("🔍 API Response - Content-Type:", response.headers.get("content-type"));
+  console.log("🔍 API Response - Headers:", Object.fromEntries(response.headers.entries()));
 
   if (!response.ok) {
     let errorMessage = "Request failed";
     try {
-      const errorData = await response.json();
-      errorMessage = errorData.error || errorData.message || errorMessage;
-      console.log("🔍 API Error - Data:", errorData);
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        console.log("🔍 API Error - Data:", errorData);
+      } else {
+        const errorText = await response.text();
+        errorMessage = `Server returned HTML: ${errorText.substring(0, 100)}...`;
+        console.log("🔍 API Error - HTML Response:", errorText.substring(0, 200));
+      }
     } catch {
       errorMessage = response.statusText || errorMessage;
     }
     throw new ApiError(errorMessage, response.status);
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    const text = await response.text();
+    console.error("❌ Expected JSON but got:", contentType, text.substring(0, 200));
+    
+    // If it's an HTML response with DOCTYPE, it's likely an error page
+    if (text.includes('<!DOCTYPE')) {
+      throw new ApiError(`Server returned HTML error page. Check if the server is running and the endpoint exists. URL: ${url}`, 500);
+    }
+    
+    throw new ApiError(`Expected JSON response but got ${contentType}. Response: ${text.substring(0, 100)}...`, 500);
   }
 
   const responseData = await response.json();
@@ -122,13 +153,33 @@ export const api = {
     });
   },
 
-  async getUserInfo(token: string): Promise<UserInfo> {
+  // TEMPORAR DISABLED
+  /*
+  async getUserInfo(token?: string): Promise<UserInfo> {
+    // Dacă nu e furnizat token, încearcă să-l ia din cookie
+    if (!token) {
+      token = getAuthTokenFromCookie() || undefined;
+    }
+    
+    console.log("🔍 getUserInfo - Token:", token ? token.substring(0, 50) + "..." : "NULL");
+    
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+    
+    console.log("🔍 getUserInfo - Token:", token ? token.substring(0, 50) + "..." : "NULL");
+    
+    if (!token) {
+      return getAuthTokenFromCookie() || undefined;
+    }
+    
     return apiRequest<UserInfo>("/me", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
   },
+  */
 
   // OAuth authorization
   initiateOAuthFlow(screen: "login" | "register" = "login", codeChallenge?: string): string {
@@ -145,3 +196,25 @@ export const api = {
 };
 
 export { ApiError };
+
+// Funcție pentru a obține token din cookie
+function getAuthTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') {
+    // Server-side - nu putem accesa cookies
+    return null;
+  }
+  
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'auth_token') {
+      const token = decodeURIComponent(value);
+      console.log("🔍 Token from cookie:", token ? token.substring(0, 50) + "..." : "NULL");
+      console.log("🔍 Token length:", token ? token.length : 0);
+      return token;
+    }
+  }
+  
+  console.log("🔍 No auth_token cookie found");
+  return null;
+}

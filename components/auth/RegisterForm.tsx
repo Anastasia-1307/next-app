@@ -42,12 +42,10 @@ export default function RegisterForm() {
 
     setIsLoading(true);
     try {
-      const response = await api.register(formData);
-      document.cookie = `auth_token=${response.token}; path=/; samesite=strict; max-age=3600`;
+      await api.register(formData);
       
-      // Redirect direct pe bază de rol
-      const roleRoute = `/${response.user.role}`;
-      router.push(roleRoute);
+      // Redirecționează la login cu mesaj de succes
+      router.push('/login?message=registration_success');
     } catch (error) {
       if (error instanceof ApiError) {
         setServerError(error.message);
@@ -65,6 +63,9 @@ export default function RegisterForm() {
       const { verifier, challenge } = await generatePKCEPair();
       sessionStorage.setItem("pkce_verifier", verifier);
       sessionStorage.setItem("pkce_challenge", challenge);
+      
+      // Adaugă un flag pentru a ști că venim din registration
+      sessionStorage.setItem("oauth_flow", "register");
       
       const authUrl = api.initiateOAuthFlow("register", challenge);
       window.location.href = authUrl;

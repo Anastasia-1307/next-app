@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { generatePKCEPair } from "@/lib/pkce";
 import { validateEmail, validatePassword } from "@/lib/validation";
@@ -10,12 +10,28 @@ import Input from "@/components/ui/Input";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Verifică mesajele din URL la încărcarea componentei
+  useEffect(() => {
+    const message = searchParams?.get('message');
+    if (message === 'registration_success') {
+      setSuccessMessage('Cont creat cu succes! Te poți autentifica acum.');
+    } else if (message === 'oauth_registration_success') {
+      setSuccessMessage('Cont creat cu succes via OAuth! Te poți autentifica acum.');
+    }
+  }, [searchParams]);
+
   const handleChange = (name: string, value: string) => {
+    // Curăță mesajele de succes la modificarea datelor
+    if (successMessage) setSuccessMessage(null);
+    if (serverError) setServerError(null);
+    
     setFormData({ ...formData, [name]: value });
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
@@ -68,11 +84,11 @@ export default function LoginForm() {
       console.log("🔍 OAuth Login - Generated verifier:", verifier.substring(0, 10) + "...");
       console.log("🔍 OAuth Login - Generated challenge:", challenge.substring(0, 10) + "...");
       
-      localStorage.setItem("pkce_verifier", verifier);
-      localStorage.setItem("pkce_challenge", challenge);
+      sessionStorage.setItem("pkce_verifier", verifier);
+      sessionStorage.setItem("pkce_challenge", challenge);
       
       // Verifică dacă s-a salvat corect
-      const savedVerifier = localStorage.getItem("pkce_verifier");
+      const savedVerifier = sessionStorage.getItem("pkce_verifier");
       console.log("🔍 OAuth Login - Saved verifier exists:", !!savedVerifier);
       console.log("🔍 OAuth Login - Saved verifier matches:", savedVerifier === verifier);
       
@@ -99,6 +115,17 @@ export default function LoginForm() {
               Bine ai revenit! Conectează-te la contul tău
             </p>
           </div>
+          
+          {successMessage && (
+            <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-xl">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {successMessage}
+              </div>
+            </div>
+          )}
           
           {serverError && (
             <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl">
