@@ -63,8 +63,16 @@ export default function LoginForm() {
       const response = await api.login(formData);
       document.cookie = `auth_token=${response.token}; path=/; samesite=strict; max-age=3600`;
       
-      // Redirect direct pe bază de rol
+      // Verify user role and redirect appropriately
+      const validRoles = ['admin', 'medic', 'pacient'];
+      if (!validRoles.includes(response.user.role)) {
+        setServerError("Rol utilizator invalid. Contactează administratorul.");
+        return;
+      }
+      
+      // Redirect based on verified role
       const roleRoute = `/${response.user.role}`;
+      console.log(`🔍 Classic Login - Redirecting ${response.user.role} to ${roleRoute}`);
       router.push(roleRoute);
     } catch (error) {
       if (error instanceof ApiError) {
