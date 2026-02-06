@@ -1,5 +1,5 @@
-/* globals.css */
 @import "tailwindcss";
+
 /* Stiluri custom */
 :root {
   --background: #ffffff;

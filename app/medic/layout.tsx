@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function MedicLayout({ children }: { children: React.ReactNode }) {
-  console.log('🔒 MEDIC LAYOUT: Starting protection check...');
+  console.log('🔒 MEDIC LAYOUT: EXECUTING!!!');
   
   try {
     const cookieStore = await cookies();
@@ -21,8 +21,6 @@ export default async function MedicLayout({ children }: { children: React.ReactN
       cache: "no-store",
     });
 
-    console.log('🔒 MEDIC LAYOUT: Response status:', res.status);
-
     if (!res.ok) {
       console.log('🔒 MEDIC LAYOUT: Invalid response - redirecting to login');
       redirect("/login");
@@ -30,7 +28,7 @@ export default async function MedicLayout({ children }: { children: React.ReactN
 
     const userData = await res.json();
     console.log('🔒 MEDIC LAYOUT: User data:', userData);
-
+    
     if (userData.role !== "medic") {
       console.log('🔒 MEDIC LAYOUT: Wrong role - redirecting to unauthorized');
       redirect("/unauthorized");

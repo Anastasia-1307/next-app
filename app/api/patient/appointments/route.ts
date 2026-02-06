@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.slice(7);
     
     // Forward request to auth-server
-    const response = await fetch("http://auth-server:4000/patient/appointments", {
+    const response = await fetch("http://localhost:4000/patient/appointments", {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Forward request to auth-server
-    const response = await fetch("http://auth-server:4000/patient/appointments", {
+    const response = await fetch("http://localhost:4000/patient/appointments", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,

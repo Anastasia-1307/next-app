@@ -31,8 +31,21 @@ export default function OAuthCallback() {
 
     // Exchange code for token
     const exchangeCodeForToken = async () => {
+      let userData: any = null;
       try {
-        const response = await fetch("http://localhost:4000/oauth/token", {
+        // Get PKCE verifier from sessionStorage
+        const codeVerifier = sessionStorage.getItem("pkce_verifier");
+        
+        if (!codeVerifier) {
+          console.error("No PKCE verifier found in sessionStorage");
+          setStatus("error");
+          setTimeout(() => {
+            router.push("/login?error=no_verifier");
+          }, 2000);
+          return;
+        }
+
+        const response = await fetch("http://localhost:4000/token", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -41,6 +54,7 @@ export default function OAuthCallback() {
             code,
             client_id: "nextjs_client",
             grant_type: "authorization_code",
+            code_verifier: codeVerifier,
           }),
         });
 
@@ -61,7 +75,7 @@ export default function OAuthCallback() {
         });
 
         if (userResponse.ok) {
-          const userData = await userResponse.json();
+          userData = await userResponse.json();
           
           setStatus("success");
           setTimeout(() => {
