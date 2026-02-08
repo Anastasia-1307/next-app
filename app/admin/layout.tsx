@@ -12,15 +12,33 @@ export default async function AdminLayout({
   
   // IMMEDIATE auth check - no async delays
   const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll();
+  console.log('🔒 ADMIN LAYOUT: All cookies found:', allCookies);
+  console.log('🔒 ADMIN LAYOUT: Cookie store keys:', Object.keys(allCookies));
+  
   const token = cookieStore.get("auth_token")?.value;
 
   console.log('🔒 ADMIN LAYOUT: Token found:', !!token);
+  console.log('🔒 ADMIN LAYOUT: Raw token value:', token);
 
   if (!token) {
-    console.log('🔒 ADMIN LAYOUT: No token - redirecting to login');
-    redirect("/login");
+    console.log('🔒 ADMIN LAYOUT: No token - showing error page');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Acces Neautorizat</h1>
+          <p className="text-gray-600 mb-4">Nu ai permisiunea de a accesa această pagină.</p>
+          <a href="/login" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Mergi la Login
+          </a>
+        </div>
+      </div>
+    );
   }
 
+  // TEST: Verificăm dacă redirect-ul funcționează
+  console.log('🔒 ADMIN LAYOUT: Token exists, continuing verification...');
+  
   // Fast auth check - use container name in Docker
   let userData: any = null;
   try {
@@ -28,10 +46,12 @@ export default async function AdminLayout({
     const res = await fetch("http://localhost:4000/me", {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
+      // Add timeout to prevent hanging
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {
-      console.log('🔒 ADMIN LAYOUT: Invalid response - redirecting to login');
+      console.log('🔒 ADMIN LAYOUT: Invalid response - REDIRECTING TO LOGIN NOW');
       redirect("/login");
     }
 
@@ -39,32 +59,45 @@ export default async function AdminLayout({
     console.log('🔒 ADMIN LAYOUT: User data:', userData);
     
     if (userData.role !== "admin") {
-      console.log('🔒 ADMIN LAYOUT: Wrong role - redirecting to unauthorized');
-      redirect("/unauthorized");
+      console.log('🔒 ADMIN LAYOUT: Wrong role - BLOCKING ACCESS');
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Acces Neautorizat</h1>
+            <p className="text-gray-600 mb-4">Nu ai permisiunea de a accesa această pagină.</p>
+            <a href="/" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Mergi la Home
+            </a>
+          </div>
+        </div>
+      );
     }
   } catch (error) {
-    console.log('🔒 ADMIN LAYOUT: Error - redirecting to login');
-    redirect("/login");
+    console.log('🔒 ADMIN LAYOUT: Error - BLOCKING ACCESS', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Eroare de Autentificare</h1>
+          <p className="text-gray-600 mb-4">A apărut o eroare la verificarea accesului.</p>
+          <a href="/login" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Mergi la Login
+          </a>
+        </div>
+      </div>
+    );
   }
 
   console.log('🔒 ADMIN LAYOUT: Access granted - rendering protected content');
   
-  // Render protected admin layout
+  // DOAR DACĂ E ADMIN - render protected admin layout
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header protejat */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">🛡️ Admin Panel</h1>
-              <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                ADMIN
-              </span>
-              <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                {userData.email}
-              </span>
-            </div>
+          <div className="flex justify-between items-center py-6">
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard Admin</h1>
+            <LogoutButton />
             <div className="flex items-center space-x-4">
               <a
                 href="/"

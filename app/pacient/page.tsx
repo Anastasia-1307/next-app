@@ -1,8 +1,9 @@
+"use strict";
 "use client";
 
 
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import LogoutButton from "@/components/layout/LogoutButton";
 
@@ -36,13 +37,23 @@ interface MedicInfo {
 
   id: string;
 
-  user_id: string;
+  user_id?: string;
 
   specialitate: string;
 
   experienta: number;
 
+  nume: string;
+
+  prenume: string;
+
   telefon?: string;
+
+  specialitate_id?: number;
+
+  created_at?: string;
+
+  updated_at?: string;
 
 }
 
@@ -63,28 +74,24 @@ interface Specialitate {
 export default function PacientPage() {
 
   const [programari, setProgramari] = useState<Programare[]>([]);
-
   const [medici, setMedici] = useState<MedicInfo[]>([]);
-
   const [specialitati, setSpecialitati] = useState<Specialitate[]>([]);
-
   const [loading, setLoading] = useState(true);
-
   const [activeTab, setActiveTab] = useState("programari");
-
   const [showCreateForm, setShowCreateForm] = useState(false);
-
   const [selectedProgramare, setSelectedProgramare] = useState<Programare | null>(null);
-
-
+  const hasFetched = useRef(false);
 
   // Fetch data from API
-
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
 
     const fetchData = async () => {
 
       try {
+
+        console.log("🔍 All cookies:", document.cookie);
 
         const token = document.cookie
 
@@ -94,9 +101,17 @@ export default function PacientPage() {
 
           ?.split('=')[1];
 
+        console.log("🔍 Extracted token:", token ? token.substring(0, 50) + "..." : "NULL");
 
 
-        if (!token) return;
+
+        if (!token) {
+
+          console.error("❌ No auth_token cookie found");
+
+          return;
+
+        }
 
 
 
@@ -110,13 +125,23 @@ export default function PacientPage() {
 
         const programariData = await programariRes.json();
 
-        setProgramari(programariData.map((p: any) => ({
+        console.log("🔍 Programari data:", programariData);
 
-          ...p,
+        // Verificăm dacă programariData este un array sau conține array-ul programari
+        const programariArray = Array.isArray(programariData) ? programariData : programariData?.programari || [];
+        
+        if (Array.isArray(programariArray)) {
+          setProgramari(programariArray.map((p: any) => ({
 
-          status: p.status as 'programat' | 'confirmat' | 'anulat'
+            ...p,
 
-        })));
+            status: p.status as 'programat' | 'confirmat' | 'anulat'
+
+          })));
+        } else {
+          console.error("❌ Programari data is not an array:", programariData);
+          setProgramari([]);
+        }
 
 
 
@@ -128,23 +153,30 @@ export default function PacientPage() {
 
         });
 
-        const mediciData = await mediciRes.json();
-
-        setMedici(mediciData);
-
+        if (mediciRes.ok) {
+          const mediciData = await mediciRes.json();
+          setMedici(Array.isArray(mediciData) ? mediciData : []);
+        } else {
+          console.error("❌ Failed to fetch medici:", mediciRes.status, mediciRes.statusText);
+          setMedici([]);
+        }
 
 
         // Fetch specialitati
 
-        const specialitatiRes = await fetch('http://localhost:5000/api/specialitati', {
+        const specialitatiRes = await fetch('http://localhost:5000/api/pacient/specialitati', {
 
           headers: { 'Authorization': `Bearer ${token}` }
 
         });
 
-        const specialitatiData = await specialitatiRes.json();
-
-        setSpecialitati(specialitatiData);
+        if (specialitatiRes.ok) {
+          const specialitatiData = await specialitatiRes.json();
+          setSpecialitati(Array.isArray(specialitatiData) ? specialitatiData : []);
+        } else {
+          console.error("❌ Failed to fetch specialitati:", specialitatiRes.status, specialitatiRes.statusText);
+          setSpecialitati([]);
+        }
 
 
 
@@ -667,6 +699,10 @@ export default function PacientPage() {
                     <tr>
 
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nume</th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prenume</th>
 
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialitate</th>
 

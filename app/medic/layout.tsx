@@ -19,6 +19,8 @@ export default async function MedicLayout({ children }: { children: React.ReactN
     const res = await fetch("http://localhost:4000/me", {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
+      // Add timeout to prevent hanging
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {

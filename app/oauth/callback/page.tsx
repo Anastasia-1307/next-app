@@ -9,29 +9,27 @@ export default function OAuthCallback() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const error = searchParams.get("error");
+    const handleOAuthCallback = async () => {
+      const code = searchParams.get("code");
+      const error = searchParams.get("error");
 
-    if (error) {
-      console.error("OAuth error:", error);
-      setStatus("error");
-      setTimeout(() => {
-        router.push("/login?error=oauth_failed");
-      }, 2000);
-      return;
-    }
+      if (error) {
+        console.error("OAuth error:", error);
+        setStatus("error");
+        setTimeout(() => {
+          router.push("/login?error=oauth_failed");
+        }, 2000);
+        return;
+      }
 
-    if (!code) {
-      setStatus("error");
-      setTimeout(() => {
-        router.push("/login?error=no_code");
-      }, 2000);
-      return;
-    }
+      if (!code) {
+        setStatus("error");
+        setTimeout(() => {
+          router.push("/login?error=no_code");
+        }, 2000);
+        return;
+      }
 
-    // Exchange code for token
-    const exchangeCodeForToken = async () => {
-      let userData: any = null;
       try {
         // Get PKCE verifier from sessionStorage
         const codeVerifier = sessionStorage.getItem("pkce_verifier");
@@ -45,69 +43,61 @@ export default function OAuthCallback() {
           return;
         }
 
-        const response = await fetch("http://localhost:4000/token", {
+        // Call server action to handle token exchange and set secure cookie
+        const response = await fetch("/api/auth/oauth-callback", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             code,
-            client_id: "nextjs_client",
-            grant_type: "authorization_code",
             code_verifier: codeVerifier,
           }),
         });
 
         if (!response.ok) {
-          throw new Error("Token exchange failed");
+          const errorData = await response.text();
+          console.error("OAuth callback failed:", errorData);
+          throw new Error("OAuth callback failed");
         }
 
-        const data = await response.json();
+        const { userData } = await response.json();
+        console.log("🔍 OAuth callback - User data received:", userData);
+        console.log("🔍 OAuth callback - User role:", userData.role);
         
-        // Set auth token cookie
-        document.cookie = `auth_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`;
-        
-        // Get user info to determine role-based redirect
-        const userResponse = await fetch("http://localhost:4000/me", {
-          headers: {
-            "Authorization": `Bearer ${data.access_token}`
+        setStatus("success");
+        setTimeout(() => {
+          // Redirect based on user role
+          console.log("🔍 Redirecting based on role:", userData.role);
+          switch (userData.role) {
+            case "admin":
+              console.log("🔍 Redirecting to /admin");
+              router.push("/admin");
+              break;
+            case "medic":
+              console.log("🔍 Redirecting to /medic");
+              router.push("/medic");
+              break;
+            case "pacient":
+              console.log("🔍 Redirecting to /pacient");
+              router.push("/pacient");
+              break;
+            default:
+              console.log("🔍 Unknown role, redirecting to /login");
+              router.push("/login");
+              break;
           }
-        });
-
-        if (userResponse.ok) {
-          userData = await userResponse.json();
-          
-          setStatus("success");
-          setTimeout(() => {
-            // Redirect based on user role
-            switch (userData.role) {
-              case "admin":
-                router.push("/admin");
-                break;
-              case "medic":
-                router.push("/medic");
-                break;
-              case "pacient":
-                router.push("/pacient");
-                break;
-              default:
-                router.push("/login");
-                break;
-            }
-          }, 1000);
-        } else {
-          throw new Error("Failed to get user info");
-        }
+        }, 1000);
       } catch (error) {
-        console.error("Token exchange error:", error);
+        console.error("OAuth callback error:", error);
         setStatus("error");
         setTimeout(() => {
-          router.push("/login?error=token_exchange_failed");
+          router.push("/login?error=oauth_callback_failed");
         }, 2000);
       }
     };
 
-    exchangeCodeForToken();
+    handleOAuthCallback();
   }, [searchParams, router]);
 
   return (
