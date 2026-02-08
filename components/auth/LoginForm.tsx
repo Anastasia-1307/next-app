@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api, ApiError } from "@/lib/api";
+import { config } from "@/lib/config";
 import { generatePKCEPair } from "@/lib/pkce";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import Button from "@/components/ui/Button";
@@ -60,22 +60,35 @@ export default function LoginForm() {
 
     setIsLoading(true);
     try {
-      const response = await api.login(formData);
-      document.cookie = `auth_token=${response.token}; path=/; samesite=strict; max-age=3600`;
+      // Call server API for authentication
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Authentication failed");
+      }
+
+      const { userData } = await response.json();
       
       // Verify user role and redirect appropriately
       const validRoles = ['admin', 'medic', 'pacient'];
-      if (!validRoles.includes(response.user.role)) {
+      if (!validRoles.includes(userData.role)) {
         setServerError("Rol utilizator invalid. Contactează administratorul.");
         return;
       }
       
       // Redirect based on verified role
-      const roleRoute = `/${response.user.role}`;
-      console.log(`🔍 Classic Login - Redirecting ${response.user.role} to ${roleRoute}`);
+      const roleRoute = `/${userData.role}`;
+      console.log(`🔍 Classic Login - Redirecting ${userData.role} to ${roleRoute}`);
       router.push(roleRoute);
     } catch (error) {
-      if (error instanceof ApiError) {
+      if (error instanceof Error) {
         setServerError(error.message);
       } else {
         setServerError("A apărut o eroare. Încearcă din nou.");
@@ -100,7 +113,14 @@ export default function LoginForm() {
       console.log("🔍 OAuth Login - Saved verifier exists:", !!savedVerifier);
       console.log("🔍 OAuth Login - Saved verifier matches:", savedVerifier === verifier);
       
-      const authUrl = api.initiateOAuthFlow("login", challenge);
+      const authUrl = `${config.authServer.baseUrl}/authorize?${new URLSearchParams({
+        response_type: "code",
+        client_id: config.authServer.clientId,
+        redirect_uri: `${config.app.baseUrl}/oauth/callback`,
+        code_challenge: challenge,
+        code_challenge_method: "S256",
+        screen: "login",
+      }).toString()}`;
       console.log("🔍 OAuth Login - Redirecting to:", authUrl);
       window.location.href = authUrl;
     } catch (error) {
