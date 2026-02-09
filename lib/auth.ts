@@ -2,13 +2,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuthUser, isTokenExpired } from "./jwt";
 import { UserRole } from "./jwt";
+import { getAuthToken } from "./cookie-utils";
 
 export async function requireAuth(): Promise<{
   user: NonNullable<Awaited<ReturnType<typeof getAuthUser>>>;
   token: string;
 }> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
+  const token = await getAuthToken();
 
   if (!token) {
     redirect("/login");
@@ -25,8 +25,7 @@ export async function requireAuth(): Promise<{
 export async function requireRole(role: UserRole) {
   console.log('🔒 requireRole: Checking for role:', role);
   
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
+  const token = await getAuthToken();
   
   console.log('🔒 requireRole: Token found:', !!token);
 

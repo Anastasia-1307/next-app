@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getAuthToken } from '@/lib/cookie-utils';
 
 console.log("🔍 MIDDLEWARE FILE LOADED - This should appear on startup");
 
@@ -8,13 +9,17 @@ export async function middleware(request: NextRequest) {
   
   console.log("🔍 Middleware EXECUTING - Request for:", pathname);
 
-  // Protejăm doar ruta /admin
-  if (pathname.startsWith('/admin')) {
-    console.log("🔍 Middleware - PROTECTED ROUTE DETECTED: /admin");
+  // Verificăm dacă ruta este protejată
+  const protectedRoutes = ['/admin', '/medic', '/pacient'];
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  
+  if (isProtectedRoute) {
+    console.log(`🔍 Middleware - PROTECTED ROUTE DETECTED: ${pathname}`);
     
-    // Verificăm dacă există token în cookies
-    const token = request.cookies.get('auth_token')?.value;
+    // Use utility function to get auth token
+    const token = await getAuthToken();
     console.log("🔍 Middleware - Token exists:", !!token);
+    console.log("🔍 Middleware - Raw token value:", token?.substring(0, 50) + "...");
     
     if (!token) {
       console.log("🔍 Middleware - NO TOKEN - Redirecting to login");
@@ -46,15 +51,31 @@ export async function middleware(request: NextRequest) {
       const response = await verifyResponse.json();
       console.log("🔍 Middleware - Verify response:", response);
 
-      // Verificăm dacă utilizatorul este admin
+      // Verificăm rolul utilizatorului în funcție de ruta
       const userData = response.status === 200 ? response.body : null;
       
-      if (!userData || userData.role !== 'admin') {
+      if (!userData) {
+        console.log("🔍 Middleware - NO USER DATA - Redirecting to login");
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+
+      // Verificăm permisiunile pe bază de rol
+      if (pathname.startsWith('/admin') && userData.role !== 'admin') {
         console.log("🔍 Middleware - NOT ADMIN - Redirecting to home");
         return NextResponse.redirect(new URL('/', request.url));
       }
+      
+      if (pathname.startsWith('/medic') && userData.role !== 'medic') {
+        console.log("🔍 Middleware - NOT MEDIC - Redirecting to home");
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+      
+      if (pathname.startsWith('/pacient') && userData.role !== 'pacient') {
+        console.log("🔍 Middleware - NOT PACIENT - Redirecting to home");
+        return NextResponse.redirect(new URL('/', request.url));
+      }
 
-      console.log("🔍 Middleware - ADMIN ACCESS GRANTED");
+      console.log(`🔍 Middleware - ${userData.role.toUpperCase()} ACCESS GRANTED`);
       
     } catch (error) {
       console.error('🔍 Middleware error:', error);
@@ -70,5 +91,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*']
+  matcher: ['/admin', '/admin/:path*', '/medic', '/medic/:path*', '/pacient', '/pacient/:path*']
 };
