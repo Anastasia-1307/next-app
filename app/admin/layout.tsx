@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import LogoutButton from "@/components/layout/LogoutButton";
+import { getAuthToken } from "@/lib/cookie-utils";
 
 // Server component - runs before any client code
 export default async function AdminLayout({
@@ -10,16 +11,10 @@ export default async function AdminLayout({
 }) {
   console.log('🔒 ADMIN LAYOUT: Checking access...');
   
-  // IMMEDIATE auth check - no async delays
-  const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
-  console.log('🔒 ADMIN LAYOUT: All cookies found:', allCookies);
-  console.log('🔒 ADMIN LAYOUT: Cookie store keys:', Object.keys(allCookies));
-  
-  const token = cookieStore.get("auth_token")?.value;
+  // Use utility function to get auth token
+  const token = await getAuthToken();
 
   console.log('🔒 ADMIN LAYOUT: Token found:', !!token);
-  console.log('🔒 ADMIN LAYOUT: Raw token value:', token);
 
   if (!token) {
     console.log('🔒 ADMIN LAYOUT: No token - showing error page');
@@ -36,44 +31,29 @@ export default async function AdminLayout({
     );
   }
 
-  // TEST: Verificăm dacă redirect-ul funcționează
-  console.log('🔒 ADMIN LAYOUT: Token exists, continuing verification...');
-  
-  // Fast auth check - use container name in Docker
-  let userData: any = null;
+  // Simple JWT verification without external API call
   try {
-    console.log('🔒 ADMIN LAYOUT: Verifying admin access...');
-    const res = await fetch("http://localhost:4000/me", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-      // Add timeout to prevent hanging
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (!res.ok) {
-      console.log('🔒 ADMIN LAYOUT: Invalid response - REDIRECTING TO LOGIN NOW');
-      redirect("/login");
-    }
-
-    userData = await res.json();
-    console.log('🔒 ADMIN LAYOUT: User data:', userData);
+    const { verifyToken } = await import("@/lib/jwt");
+    const payload = await verifyToken(token);
     
-    if (userData.role !== "admin") {
+    console.log('🔒 ADMIN LAYOUT: JWT payload:', payload);
+    
+    if (!payload || payload.role !== "admin") {
       console.log('🔒 ADMIN LAYOUT: Wrong role - BLOCKING ACCESS');
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-red-600 mb-4">Acces Neautorizat</h1>
             <p className="text-gray-600 mb-4">Nu ai permisiunea de a accesa această pagină.</p>
-            <a href="/" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Mergi la Home
+            <a href="/login" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Mergi la Login
             </a>
           </div>
         </div>
       );
     }
   } catch (error) {
-    console.log('🔒 ADMIN LAYOUT: Error - BLOCKING ACCESS', error);
+    console.log('🔒 ADMIN LAYOUT: JWT verification failed - BLOCKING ACCESS', error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -93,87 +73,10 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header protejat */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Admin</h1>
-            <LogoutButton />
-            <div className="flex items-center space-x-4">
-              <a
-                href="/"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                🏠 Home
-              </a>
-              <LogoutButton />
-            </div>
-          </div>
-        </div>
-      </div>
+     
 
-      {/* Breadcrumb de navigare */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8 py-3" aria-label="Admin Navigation">
-            <a
-              href="/admin"
-              className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              📊 Dashboard
-            </a>
-            <a
-              href="/admin/users"
-              className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              👥 Utilizatori
-            </a>
-            <a
-              href="/admin/logs"
-              className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              📋 Log-uri
-            </a>
-            <a
-              href="/admin/settings"
-              className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              ⚙️ Setări
-            </a>
-          </nav>
-        </div>
-      </div>
-
-      {/* Banner de securitate */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">Zonă Securizată - Acces Administrator</h3>
-            <div className="mt-2 text-sm text-blue-700">
-              <p>Sunteți autentificat ca <strong>{userData.email}</strong> cu rol de <strong>Administrator</strong>.</p>
-              <p className="mt-1">Toate acțiunile sunt monitorizate și înregistrate în sistem.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Conținut protejat */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {/* Debug info */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <h3 className="text-sm font-medium text-yellow-800">🔒 Debug Information</h3>
-            <div className="mt-2 text-sm text-yellow-700">
-              <p>✅ Token valid și prezent</p>
-              <p>✅ Rol verificat: {userData.role}</p>
-              <p>✅ Acces administrator confirmat</p>
-            </div>
-          </div>
-
           {/* Conținutul paginii */}
           {children}
         </div>
@@ -184,7 +87,7 @@ export default async function AdminLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4">
             <p className="text-center text-sm text-gray-500">
-              🛡️ © 2024 Admin Panel - Acces restricționat. Doar administratorii au acces la această zonă.
+              🛡️ 2024 Admin Panel - Acces restricționat. Doar administratorii au acces la această zonă.
             </p>
           </div>
         </div>

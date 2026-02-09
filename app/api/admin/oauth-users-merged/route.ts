@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthToken } from '@/lib/cookie-utils';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
   try {
-    const token = await getAuthToken();
-
+    // Get token from cookies or Authorization header
+    let token = request.headers.get('authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      const cookieToken = request.cookies.get('auth_token')?.value;
+      token = cookieToken;
+    }
+    
     if (!token) {
       return NextResponse.json(
         { error: 'No authentication token found' },
@@ -12,18 +17,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       );
     }
 
-    const body = await request.json();
-
-    // Forward request to resource server with Authorization header
-    const resourceUrl = `http://localhost:5000/api/pacient/programari/${params.id}`;
-    const response = await fetch(resourceUrl, {
-      method: 'PATCH',
+    // Forward request to resource server - use same endpoint as regular users
+    const response = await fetch('http://localhost:5000/api/admin/users', {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify(body),
     });
 
     const data = await response.json();

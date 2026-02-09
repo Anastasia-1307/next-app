@@ -1,12 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getAuthToken } from "@/lib/cookie-utils";
 
 export default async function PacientLayout({ children }: { children: React.ReactNode }) {
   console.log('🔒 PACIENT LAYOUT: Starting protection check...');
   
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
+    const token = await getAuthToken();
     
     console.log('🔒 PACIENT LAYOUT: Token found:', !!token);
 

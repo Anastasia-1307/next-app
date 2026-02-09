@@ -3,8 +3,14 @@ import { getAuthToken } from '@/lib/cookie-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = await getAuthToken();
-
+    // Get token from cookies or Authorization header
+    let token = request.headers.get('authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      const cookieToken = request.cookies.get('auth_token')?.value;
+      token = cookieToken;
+    }
+    
     if (!token) {
       return NextResponse.json(
         { error: 'No authentication token found' },
@@ -12,9 +18,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Forward request to resource server with Authorization header
-    const resourceUrl = 'http://localhost:5000/api/pacient/medici';
-    const response = await fetch(resourceUrl, {
+    // Forward request to resource server
+    const response = await fetch('http://localhost:5000/api/admin/programari', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -22,17 +27,6 @@ export async function GET(request: NextRequest) {
       },
       credentials: 'include',
     });
-
-    // Handle non-JSON responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const errorText = await response.text();
-      console.error('Resource server returned non-JSON response:', errorText);
-      return NextResponse.json(
-        { error: 'Resource server error', details: errorText },
-        { status: response.status }
-      );
-    }
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });

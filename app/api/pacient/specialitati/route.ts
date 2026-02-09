@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getAuthToken } from '@/lib/cookie-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const token = await getAuthToken();
 
     if (!token) {
       return NextResponse.json(
@@ -23,6 +22,17 @@ export async function GET(request: NextRequest) {
       },
       credentials: 'include',
     });
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const errorText = await response.text();
+      console.error('Resource server returned non-JSON response:', errorText);
+      return NextResponse.json(
+        { error: 'Resource server error', details: errorText },
+        { status: response.status }
+      );
+    }
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });

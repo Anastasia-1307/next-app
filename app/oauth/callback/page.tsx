@@ -58,10 +58,14 @@ export default function OAuthCallback() {
         if (!response.ok) {
           const errorData = await response.text();
           console.error("OAuth callback failed:", errorData);
+          console.error("Response status:", response.status);
+          console.error("Response headers:", response.headers);
           throw new Error("OAuth callback failed");
         }
 
-        const { userData } = await response.json();
+        const responseData = await response.json();
+        console.log("🔍 OAuth callback - Full response:", responseData);
+        const { userData } = responseData;
         console.log("🔍 OAuth callback - User data received:", userData);
         console.log("🔍 OAuth callback - User role:", userData.role);
         

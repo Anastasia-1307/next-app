@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react';
 import LogoutButton from "@/components/layout/LogoutButton";
 import UserManagement from "@/components/admin/UserManagement";
+import OAuthUsersManagement from "@/components/admin/OAuthUsersManagement";
+import UserLogsManagement from "@/components/admin/UserLogsManagement";
+import SpecialitatiManagement from "@/components/admin/SpecialitatiManagement";
+import MedicInfoManagement from "@/components/admin/MedicInfoManagement";
 
 // TypeScript interfaces matching the real database schema
 interface User {
@@ -105,34 +109,29 @@ export default function AdminPage() {
     getToken();
   }, []);
 
-  // Fetch data on component mount - no token dependency needed
+  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
-      if (!token) {
-        setError('No authentication token found');
-        setLoading(false);
-        return;
-      }
-
       try {
+        // Use the same method as UserManagement - fetch with credentials
         const [usersRes, logsRes, medicRes, programRes, specialitatiRes, programariRes] = await Promise.all([
-          fetch('http://localhost:4000/admin/users', {
-            headers: { 'Authorization': `Bearer ${token}` }
+          fetch('/api/admin/users', {
+            credentials: 'include'
           }),
-          fetch('http://localhost:4000/admin/user-logs', {
-            headers: { 'Authorization': `Bearer ${token}` }
+          fetch('/api/admin/user-logs', {
+            credentials: 'include'
           }),
-          fetch('http://localhost:4000/admin/medic-info', {
-            headers: { 'Authorization': `Bearer ${token}` }
+          fetch('/api/admin/medic-info', {
+            credentials: 'include'
           }),
-          fetch('http://localhost:4000/admin/program-lucru', {
-            headers: { 'Authorization': `Bearer ${token}` }
+          fetch('/api/admin/program-lucru', {
+            credentials: 'include'
           }),
-          fetch('http://localhost:4000/admin/specialitati', {
-            headers: { 'Authorization': `Bearer ${token}` }
+          fetch('/api/admin/specialitati', {
+            credentials: 'include'
           }),
-          fetch('http://localhost:4000/admin/programari', {
-            headers: { 'Authorization': `Bearer ${token}` }
+          fetch('/api/admin/programari', {
+            credentials: 'include'
           })
         ]);
 
@@ -154,15 +153,13 @@ export default function AdminPage() {
           programariRes.json()
         ]);
 
-        // Extract OAuth users from the same users endpoint
+        // Extract OAuth users from same users endpoint
         const allUsers = usersData.users || [];
-        const oauthUsers = allUsers.filter((user: any) => user.userType === 'oauth');
-        const classicUsers = allUsers.filter((user: any) => user.userType === 'classic');
-
-        // Set data with proper type checking
-        setUsers(classicUsers);
+        
+        // All users are OAuth users in this system, no userType filtering needed
+        setUsers(allUsers);
         setUserLogs(Array.isArray(logsData.logs) ? logsData.logs : []);
-        setOAuthUsers(oauthUsers);
+        setOAuthUsers([]); // No separate OAuth users in this system
         setMedicInfo(Array.isArray(medicData) ? medicData : []);
         setProgramLucru(Array.isArray(programData) ? programData : []);
         setSpecialitati(Array.isArray(specialitatiData) ? specialitatiData : []);
@@ -187,7 +184,7 @@ export default function AdminPage() {
     };
 
     fetchData();
-  }, [token]);
+  }, []); // Remove token dependency
 
   const renderTabContent = () => {
     if (loading) {
@@ -211,68 +208,10 @@ export default function AdminPage() {
         return <UserManagement />;
 
       case "logs":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Log-uri Utilizatori ({userLogs.length})</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilizator</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acțiune</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resursă</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {userLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.user_id || 'Anonymous'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.action}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.resource || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.ip_address || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(log.created_at).toLocaleString('ro-RO')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+        return <UserLogsManagement />;
 
       case "oauth":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Utilizatori OAuth ({oauthUsers.length})</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {oauthUsers.map((oauth) => (
-                    <tr key={oauth.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{oauth.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{oauth.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{oauth.username}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{oauth.role}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(oauth.created_at).toLocaleString('ro-RO')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+        return <OAuthUsersManagement />;
 
       case "medic":
         return (
@@ -426,39 +365,40 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Tab Navigation */}
-          <div className="mb-8">
-            <nav className="flex space-x-8" aria-label="Tabs">
-              {[
-                { id: "users", label: "Utilizatori", count: users.length },
-                { id: "logs", label: "Log-uri", count: userLogs.length },
-                { id: "oauth", label: "OAuth", count: oauthUsers.length },
-                { id: "medic", label: "Medici", count: medicInfo.length },
-                { id: "program", label: "Program Lucru", count: programLucru.length },
-                { id: "specialitati", label: "Specialități", count: specialitati.length },
-                { id: "programari", label: "Programări", count: programari.length },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
-                >
-                  {tab.label} ({tab.count})
-                </button>
-              ))}
-            </nav>
+<div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+<div className="px-4 py-6 sm:px-0">
+{/* Tab Navigation */}
+<div className="mb-8">
+<nav className="flex space-x-8" aria-label="Tabs">
+{[
+{ id: "users", label: "Utilizatori", count: users.length },
+{ id: "logs", label: "Log-uri", count: userLogs.length },
+{ id: "oauth", label: "OAuth", count: oauthUsers.length },
+{ id: "medic", label: "Medici", count: medicInfo.length },
+{ id: "program", label: "Program Lucru", count: programLucru.length },
+{ id: "specialitati", label: "Specialități", count: specialitati.length },
+{ id: "programari", label: "Programări", count: programari.length },
+].map((tab) => (
+<button
+key={tab.id}
+onClick={() => setActiveTab(tab.id)}
+className={`${
+activeTab === tab.id
+? 'border-blue-500 text-blue-600'
+: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+>
+{tab.label} ({tab.count})
+</button>
+))}
+</nav>
+</div>
           </div>
 
           {/* Tab Content */}
           {renderTabContent()}
         </div>
       </div>
-    </div>
+    
   );
 }

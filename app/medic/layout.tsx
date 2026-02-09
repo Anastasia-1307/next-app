@@ -1,12 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getAuthToken } from "@/lib/cookie-utils";
 
 export default async function MedicLayout({ children }: { children: React.ReactNode }) {
   console.log('🔒 MEDIC LAYOUT: EXECUTING!!!');
   
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
+    const token = await getAuthToken();
     
     console.log('🔒 MEDIC LAYOUT: Token found:', !!token);
 
