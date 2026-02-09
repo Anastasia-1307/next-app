@@ -91,36 +91,11 @@ export default function PacientPage() {
 
       try {
 
-        console.log("🔍 All cookies:", document.cookie);
+        console.log("🔍 Fetching data from resource server...");
 
-        const token = document.cookie
-
-          .split('; ')
-
-          .find(row => row.startsWith('auth_token='))
-
-          ?.split('=')[1];
-
-        console.log("🔍 Extracted token:", token ? token.substring(0, 50) + "..." : "NULL");
-
-
-
-        if (!token) {
-
-          console.error("❌ No auth_token cookie found");
-
-          return;
-
-        }
-
-
-
-        // Fetch programari
-
-        const programariRes = await fetch('http://localhost:5000/api/pacient/programari', {
-
-          headers: { 'Authorization': `Bearer ${token}` }
-
+        // Fetch programari - use Next.js API proxy
+        const programariRes = await fetch('/api/pacient/programari', {
+          method: 'GET'
         });
 
         const programariData = await programariRes.json();
@@ -145,12 +120,9 @@ export default function PacientPage() {
 
 
 
-        // Fetch medici
-
-        const mediciRes = await fetch('http://localhost:5000/api/pacient/medici', {
-
-          headers: { 'Authorization': `Bearer ${token}` }
-
+        // Fetch medici - use Next.js API proxy
+        const mediciRes = await fetch('/api/pacient/medici', {
+          method: 'GET'
         });
 
         if (mediciRes.ok) {
@@ -162,12 +134,9 @@ export default function PacientPage() {
         }
 
 
-        // Fetch specialitati
-
-        const specialitatiRes = await fetch('http://localhost:5000/api/pacient/specialitati', {
-
-          headers: { 'Authorization': `Bearer ${token}` }
-
+        // Fetch specialitati - use Next.js API proxy
+        const specialitatiRes = await fetch('/api/pacient/specialitati', {
+          method: 'GET'
         });
 
         if (specialitatiRes.ok) {
@@ -196,31 +165,22 @@ export default function PacientPage() {
 
     fetchData();
 
+
   }, []);
 
+
+ 
 
 
   const handleCreateProgramare = async (formData: any) => {
 
     try {
 
-      const token = document.cookie
-
-        .split('; ')
-
-          .find(row => row.startsWith('auth_token='))
-
-          ?.split('=')[1];
-
-
-
-      const response = await fetch('http://localhost:5000/api/pacient/programari', {
+      const response = await fetch('/api/pacient/programari', {
 
         method: 'POST',
 
         headers: { 
-
-          'Authorization': `Bearer ${token}`,
 
           'Content-Type': 'application/json'
 
@@ -230,6 +190,8 @@ export default function PacientPage() {
 
       });
 
+
+ 
 
 
       if (response.ok) {
@@ -262,32 +224,13 @@ export default function PacientPage() {
 
     try {
 
-      const token = document.cookie
-
-        .split('; ')
-
-          .find(row => row.startsWith('auth_token='))
-
-          ?.split('=')[1];
-
-
-
-      await fetch(`http://localhost:5000/api/pacient/programari/${programareId}`, {
-
+      await fetch(`/api/pacient/programari/${programareId}`, {
         method: 'PATCH',
-
         headers: { 
-
-          'Authorization': `Bearer ${token}`,
-
           'Content-Type': 'application/json'
-
         },
-
         body: JSON.stringify({ status })
-
       });
-
 
 
       setProgramari(programari.map(p => p.id === programareId ? { ...p, status: status as 'programat' | 'confirmat' | 'anulat' } : p ));

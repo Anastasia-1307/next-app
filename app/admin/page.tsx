@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import LogoutButton from "@/components/layout/LogoutButton";
+import UserManagement from "@/components/admin/UserManagement";
 
 // TypeScript interfaces matching the real database schema
 interface User {
@@ -104,7 +105,7 @@ export default function AdminPage() {
     getToken();
   }, []);
 
-  // Fetch data from backend
+  // Fetch data on component mount - no token dependency needed
   useEffect(() => {
     const fetchData = async () => {
       if (!token) {
@@ -207,35 +208,7 @@ export default function AdminPage() {
 
     switch (activeTab) {
       case "users":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Utilizatori ({users.length})</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.role}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(user.created_at).toLocaleString('ro-RO')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+        return <UserManagement />;
 
       case "logs":
         return (
