@@ -163,12 +163,12 @@ export default function MedicInfoManagement() {
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">Medici Info Management</h3>
+          <h3 className="text-lg font-medium text-gray-900">Gestionarea medicilor</h3>
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
           >
-            Add Medic
+            Adaugă Medic
           </button>
         </div>
       </div>
@@ -195,7 +195,6 @@ export default function MedicInfoManagement() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prenume</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialitate</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experiență</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -210,7 +209,6 @@ export default function MedicInfoManagement() {
                     {medic.specialitati?.nume || `ID: ${medic.specialitate_id}`}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.experienta} ani</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.username || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(medic.created_at).toLocaleString()}
                   </td>
@@ -219,13 +217,13 @@ export default function MedicInfoManagement() {
                       onClick={() => openEditModal(medic)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
                     >
-                      Edit
+                      Editează
                     </button>
                     <button
                       onClick={() => handleDelete(medic.id)}
                       className="text-red-600 hover:text-red-900"
                     >
-                      Delete
+                    Șterge
                     </button>
                   </td>
                 </tr>
@@ -245,37 +243,37 @@ export default function MedicInfoManagement() {
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add Medic</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Adaugă Medic</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nume</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nume</label>
                 <input
                   type="text"
                   value={formData.nume}
                   onChange={(e) => setFormData({ ...formData, nume: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Prenume</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Prenume</label>
                 <input
                   type="text"
                   value={formData.prenume}
                   onChange={(e) => setFormData({ ...formData, prenume: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Specialitate</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Specialitate</label>
                 <select
                   value={formData.specialitate_id}
                   onChange={(e) => setFormData({ ...formData, specialitate_id: parseInt(e.target.value) })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   required
                 >
-                  <option value="">Select specialitate</option>
+                  <option value="">Selectează specialitate</option>
                   {specialitati.map((spec) => (
                     <option key={spec.id} value={spec.id}>
                       {spec.nume}
@@ -284,12 +282,12 @@ export default function MedicInfoManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Experiență (ani)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Experiență (ani)</label>
                 <input
                   type="number"
                   value={formData.experienta}
                   onChange={(e) => setFormData({ ...formData, experienta: parseInt(e.target.value) })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   min="0"
                   required
                 />
@@ -300,13 +298,13 @@ export default function MedicInfoManagement() {
                 onClick={() => setIsCreateModalOpen(false)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 onClick={handleCreate}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
-                Create
+                Crează
               </button>
             </div>
           </div>
@@ -371,13 +369,13 @@ export default function MedicInfoManagement() {
                 onClick={() => setIsEditModalOpen(false)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
               >
-                Cancel
+               Anulează
               </button>
               <button
                 onClick={handleUpdate}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
-                Update
+                Actualizează
               </button>
             </div>
           </div>

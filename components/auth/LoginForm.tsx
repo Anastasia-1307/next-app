@@ -226,6 +226,15 @@ export default function LoginForm() {
           </Button>
 
           <div className="text-center">
+            <a 
+              href="/forgot-password" 
+              className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors duration-200"
+            >
+              Am uitat parola
+            </a>
+          </div>
+
+          <div className="text-center">
             <p className="text-gray-700 dark:text-gray-300">
               Nu ai cont?{" "}
               <a 

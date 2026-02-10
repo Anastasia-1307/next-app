@@ -102,7 +102,7 @@ export default function SpecialitatiManagement() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this specialitate?')) return;
+    if (!confirm('Ești sigur că vrei să ștergi această specialitate?')) return;
     
     try {
       const response = await fetch(`/api/admin/specialitati/${id}`, {
@@ -134,12 +134,12 @@ export default function SpecialitatiManagement() {
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">Specialități Management</h3>
+          <h3 className="text-lg font-medium text-gray-900">Gestionarea specilităților</h3>
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
           >
-            Add Specialitate
+            Adaugă specialitate
           </button>
         </div>
       </div>
@@ -164,8 +164,8 @@ export default function SpecialitatiManagement() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nume</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descriere</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Creat la</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acțiuni</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -191,13 +191,13 @@ export default function SpecialitatiManagement() {
                       onClick={() => openEditModal(specialitate)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
                     >
-                      Edit
+                      Editează
                     </button>
                     <button
                       onClick={() => handleDelete(specialitate.id)}
                       className="text-red-600 hover:text-red-900"
                     >
-                      Delete
+                      Șterge
                     </button>
                   </td>
                 </tr>
@@ -207,7 +207,7 @@ export default function SpecialitatiManagement() {
           
           {specialitati.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">No specialități found</p>
+              <p className="text-gray-500">Nu există specialități</p>
             </div>
           )}
         </div>
@@ -217,24 +217,24 @@ export default function SpecialitatiManagement() {
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add Specialitate</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Adaugă specialitate</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nume</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nume</label>
                 <input
                   type="text"
                   value={formData.nume}
                   onChange={(e) => setFormData({ ...formData, nume: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Descriere</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descriere</label>
                 <textarea
                   value={formData.descriere}
                   onChange={(e) => setFormData({ ...formData, descriere: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   rows={3}
                 />
               </div>
@@ -244,13 +244,13 @@ export default function SpecialitatiManagement() {
                 onClick={() => setIsCreateModalOpen(false)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 onClick={handleCreate}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
-                Create
+                Adaugă
               </button>
             </div>
           </div>
@@ -261,24 +261,24 @@ export default function SpecialitatiManagement() {
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Specialitate</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Editează Specialitate</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nume</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nume</label>
                 <input
                   type="text"
                   value={formData.nume}
                   onChange={(e) => setFormData({ ...formData, nume: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Descriere</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descriere</label>
                 <textarea
                   value={formData.descriere}
                   onChange={(e) => setFormData({ ...formData, descriere: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                   rows={3}
                 />
               </div>
@@ -288,13 +288,13 @@ export default function SpecialitatiManagement() {
                 onClick={() => setIsEditModalOpen(false)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 onClick={handleUpdate}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
-                Update
+                Actualizează
               </button>
             </div>
           </div>

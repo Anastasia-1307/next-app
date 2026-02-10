@@ -9,6 +9,7 @@ interface User {
   role: string;
   created_at: string;
   updated_at: string;
+  userType?: 'classic' | 'oauth';
 }
 
 interface UserFormData {
@@ -18,13 +19,14 @@ interface UserFormData {
   role: string;
 }
 
-export default function UserManagement() {
-  const [users, setUsers] = useState<User[]>([]);
+export default function UserManagement({ users: initialUsers = [] }: { users?: User[] }) {
+  const [users, setUsers] = useState<User[]>(initialUsers);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
     username: '',
@@ -32,10 +34,38 @@ export default function UserManagement() {
     password: ''
   });
 
-  // Fetch users on component mount
+  // Get current user info
   useEffect(() => {
-    fetchUsers();
+    const getCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/admin/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData.user);
+        }
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+
+    getCurrentUser();
   }, []);
+
+  // Check if user is admin and trying to edit/delete themselves
+  const isCurrentUserAdmin = currentUser?.role === 'admin';
+  const canEditUser = (user: User) => {
+    return !isCurrentUserAdmin || user.id !== currentUser?.id;
+  };
+
+  // Fetch users on component mount - only if no initial users provided
+  useEffect(() => {
+    if (initialUsers.length === 0) {
+      fetchUsers();
+    }
+  }, [initialUsers]);
 
   const fetchUsers = async () => {
     try {
@@ -140,12 +170,7 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Management Utilizatori</h3>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          Adaugă Utilizator
-        </button>
+       
       </div>
 
       {/* Error Message */}
@@ -174,23 +199,40 @@ export default function UserManagement() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.role}</td>
+               <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      user.role === 'medic' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {new Date(user.created_at).toLocaleString('ro-RO')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className="text-blue-600 hover:text-blue-900 mr-2"
-                  >
-                    Editare
-                  </button>
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Ștergere
-                  </button>
+                  <div className="flex space-x-2">
+                    {canEditUser(user) && (
+                      <>
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Editare
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          className="text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Ștergere
+                        </button>
+                      </>
+                    )}
+                    {!canEditUser(user) && (
+                      <span className="text-gray-400 text-sm">Protejat</span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

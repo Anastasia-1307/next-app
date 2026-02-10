@@ -31,7 +31,7 @@ export default function UserLogsManagement() {
       const data = await response.json();
       
       if (response.ok) {
-        setLogs(data);
+        setLogs(data.logs || []);
       } else {
         setError(data.error || 'Failed to fetch user logs');
       }
@@ -132,7 +132,7 @@ export default function UserLogsManagement() {
           
           {logs.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">No logs found</p>
+              <p className="text-gray-500">Nu sunt loguri</p>
             </div>
           )}
         </div>
