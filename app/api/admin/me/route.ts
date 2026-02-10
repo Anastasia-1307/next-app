@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthToken } from '@/lib/cookie-utils';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log("🔍 Next.js API: Admin ME request received");
+    
     // Get token from cookies or Authorization header
     let token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -17,8 +20,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Forward request to auth server with Authorization header
-    const response = await fetch('http://localhost:4000/admin/activity-logs', {
+    // Forward request to auth-server
+    const response = await fetch('http://localhost:4000/me', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -27,23 +30,18 @@ export async function GET(request: NextRequest) {
       credentials: 'include',
     });
 
-    // Handle non-JSON responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
+    if (!response.ok) {
       const errorText = await response.text();
-      console.error('Resource server returned non-JSON response:', errorText);
-      return NextResponse.json(
-        { error: 'Resource server error', details: errorText },
-        { status: response.status }
-      );
+      console.error("🔍 Next.js API: Auth-server error response:", errorText);
+      throw new Error(`Failed to get admin info: ${response.status}`);
     }
 
     const data = await response.json();
-    // Extract logs from auth server response structure
-    return NextResponse.json({ logs: data.logs }, { status: response.status });
+    console.log("🔍 Next.js API: Successfully fetched admin info");
+    return NextResponse.json(data);
 
   } catch (error) {
-    console.error('API proxy error:', error);
+    console.error('🔍 Next.js API: API proxy error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

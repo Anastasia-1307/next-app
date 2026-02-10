@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
     console.log('🔍 API ADMIN USERS - Making request to resource server...');
     console.log('🔍 API ADMIN USERS - Token being sent:', token.substring(0, 50) + '...');
     
-    // Forward request to resource server with Authorization header
-    const response = await fetch('http://localhost:5000/api/admin/users', {
+    // Forward request to auth server with Authorization header
+    const response = await fetch('http://localhost:4000/admin/users', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // Forward request to resource server with Authorization header
-    const response = await fetch('http://localhost:5000/api/admin/users', {
+    // Forward request to auth server with Authorization header
+    const response = await fetch('http://localhost:4000/admin/users', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -6,7 +6,9 @@ import UserManagement from "@/components/admin/UserManagement";
 import OAuthUsersManagement from "@/components/admin/OAuthUsersManagement";
 import UserLogsManagement from "@/components/admin/UserLogsManagement";
 import SpecialitatiManagement from "@/components/admin/SpecialitatiManagement";
+import ProgramLucruManagement from "@/components/admin/ProgramLucruManagement";
 import MedicInfoManagement from "@/components/admin/MedicInfoManagement";
+import PasswordResetTokensManagement from "@/components/admin/PasswordResetTokensManagement";
 
 // TypeScript interfaces matching the real database schema
 interface User {
@@ -16,6 +18,7 @@ interface User {
   role: string;
   created_at: string;
   updated_at: string;
+  userType?: 'classic' | 'oauth';
 }
 
 interface UserLog {
@@ -82,14 +85,24 @@ interface Programare {
   updated_at: string;
 }
 
+interface PasswordResetToken {
+  id: string;
+  email: string;
+  expires_at: string;
+  created_at: string;
+  used: boolean;
+  user_type: string;
+}
+
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [userLogs, setUserLogs] = useState<UserLog[]>([]);
   const [oauthUsers, setOAuthUsers] = useState<OAuthUser[]>([]);
-  const [medicInfo, setMedicInfo] = useState<MedicInfo[]>([]);
   const [programLucru, setProgramLucru] = useState<ProgramLucru[]>([]);
   const [specialitati, setSpecialitati] = useState<Specialitate[]>([]);
   const [programari, setProgramari] = useState<Programare[]>([]);
+  const [passwordResetTokens, setPasswordResetTokens] = useState<PasswordResetToken[]>([]);
+  const [medicInfo, setMedicInfo] = useState<MedicInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("users");
   const [error, setError] = useState<string | null>(null);
@@ -114,11 +127,14 @@ export default function AdminPage() {
     const fetchData = async () => {
       try {
         // Use the same method as UserManagement - fetch with credentials
-        const [usersRes, logsRes, medicRes, programRes, specialitatiRes, programariRes] = await Promise.all([
+        const [usersRes, logsRes, oauthUsersRes, medicRes, programRes, specialitatiRes, programariRes, resetTokensRes] = await Promise.all([
           fetch('/api/admin/users', {
             credentials: 'include'
           }),
           fetch('/api/admin/user-logs', {
+            credentials: 'include'
+          }),
+          fetch('/api/admin/oauth-users', {
             credentials: 'include'
           }),
           fetch('/api/admin/medic-info', {
@@ -132,11 +148,14 @@ export default function AdminPage() {
           }),
           fetch('/api/admin/programari', {
             credentials: 'include'
+          }),
+          fetch('/api/admin/password-reset-tokens', {
+            credentials: 'include'
           })
         ]);
 
         // Check responses
-        const responses = [usersRes, logsRes, medicRes, programRes, specialitatiRes, programariRes];
+        const responses = [usersRes, logsRes, oauthUsersRes, medicRes, programRes, specialitatiRes, programariRes, resetTokensRes];
         const failedResponses = responses.filter(res => !res.ok);
         
         if (failedResponses.length > 0) {
@@ -144,26 +163,30 @@ export default function AdminPage() {
         }
 
         // Get all data
-        const [usersData, logsData, medicData, programData, specialitatiData, programariData] = await Promise.all([
+        const [usersData, logsData, oauthUsersData, medicData, programData, specialitatiData, programariData, resetTokensData] = await Promise.all([
           usersRes.json(),
           logsRes.json(),
+          oauthUsersRes.json(),
           medicRes.json(),
           programRes.json(),
           specialitatiRes.json(),
-          programariRes.json()
+          programariRes.json(),
+          resetTokensRes.json()
         ]);
 
-        // Extract OAuth users from same users endpoint
+        // Extract OAuth users from the OAuth users API response
         const allUsers = usersData.users || [];
+        const oauthUsersDataList = oauthUsersData.users || [];
+        const classicUsers = allUsers.filter((user: any) => user.userType === 'classic');
         
-        // All users are OAuth users in this system, no userType filtering needed
-        setUsers(allUsers);
+        setUsers(classicUsers);
         setUserLogs(Array.isArray(logsData.logs) ? logsData.logs : []);
-        setOAuthUsers([]); // No separate OAuth users in this system
+        setOAuthUsers(oauthUsersDataList);
         setMedicInfo(Array.isArray(medicData) ? medicData : []);
         setProgramLucru(Array.isArray(programData) ? programData : []);
         setSpecialitati(Array.isArray(specialitatiData) ? specialitatiData : []);
         setProgramari(Array.isArray(programariData.programari) ? programariData.programari : []);
+        setPasswordResetTokens(Array.isArray(resetTokensData.tokens) ? resetTokensData.tokens : []);
         
         console.log('🔍 ADMIN PAGE: Data fetching completed successfully');
       } catch (error) {
@@ -178,6 +201,7 @@ export default function AdminPage() {
         setProgramLucru([]);
         setSpecialitati([]);
         setProgramari([]);
+        setPasswordResetTokens([]);
       } finally {
         setLoading(false);
       }
@@ -205,7 +229,7 @@ export default function AdminPage() {
 
     switch (activeTab) {
       case "users":
-        return <UserManagement />;
+        return <UserManagement users={users} />;
 
       case "logs":
         return <UserLogsManagement />;
@@ -214,105 +238,13 @@ export default function AdminPage() {
         return <OAuthUsersManagement />;
 
       case "medic":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Informații Medici ({medicInfo.length})</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nume</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prenume</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experiență</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialitate</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {medicInfo.map((medic) => (
-                    <tr key={medic.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.nume}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.prenume}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.experienta} ani</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.specialitati?.nume || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(medic.created_at).toLocaleString('ro-RO')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+        return <MedicInfoManagement />;
 
       case "program":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Program Lucru ({programLucru.length})</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medic ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ora Început</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ora Sfârșit</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activ</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {programLucru.map((program) => (
-                    <tr key={program.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{program.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{program.medic_info_id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{program.ora_inceput}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{program.ora_sfarsit}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          program.activ ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {program.activ ? 'Activ' : 'Inactiv'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(program.created_at).toLocaleString('ro-RO')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+        return <ProgramLucruManagement />;
 
       case "specialitati":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Specialități ({specialitati.length})</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nume</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descriere</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {specialitati.map((specialitate) => (
-                    <tr key={specialitate.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{specialitate.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{specialitate.nume}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{specialitate.descriere || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(specialitate.created_at).toLocaleString('ro-RO')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+        return <SpecialitatiManagement />;
 
       case "programari":
         return (
@@ -349,6 +281,9 @@ export default function AdminPage() {
           </div>
         );
 
+      case "reset-tokens":
+        return <PasswordResetTokensManagement />;
+
       default:
         return null;
     }
@@ -378,6 +313,7 @@ export default function AdminPage() {
 { id: "program", label: "Program Lucru", count: programLucru.length },
 { id: "specialitati", label: "Specialități", count: specialitati.length },
 { id: "programari", label: "Programări", count: programari.length },
+{ id: "reset-tokens", label: "Token-uri Resetare", count: passwordResetTokens.length },
 ].map((tab) => (
 <button
 key={tab.id}
