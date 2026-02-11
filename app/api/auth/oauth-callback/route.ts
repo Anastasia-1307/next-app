@@ -122,9 +122,11 @@ export async function POST(request: NextRequest) {
 
 
 
-    // Set secure HTTP-only cookie
+    // Set secure HTTP-only cookies
 
     const cookieStore = await cookies();
+
+    // Access token cookie
 
     cookieStore.set('auth_token', tokenData.access_token, {
 
@@ -140,9 +142,29 @@ export async function POST(request: NextRequest) {
 
     });
 
+    // Refresh token cookie (dacă există)
 
+    if (tokenData.refresh_token) {
 
-    console.log('✅ Server OAuth Callback - Cookie set successfully');
+      cookieStore.set('refresh_token', tokenData.refresh_token, {
+
+        httpOnly: true,
+
+        secure: false, // Disabled for development
+
+        sameSite: 'lax',
+
+        maxAge: 30 * 24 * 60 * 60, // 30 zile
+
+        path: '/',
+
+      });
+
+      console.log('✅ Server OAuth Callback - Refresh token cookie set successfully');
+
+    }
+
+    console.log('✅ Server OAuth Callback - Access token cookie set successfully');
 
     console.log('🔍 Cookie details:', {
 

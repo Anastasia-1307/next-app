@@ -55,7 +55,15 @@ export default function OAuthUsersManagement() {
         
         if (response.ok) {
           const userData = await response.json();
-          setCurrentUser(userData.user);
+          console.log('🔍 DEBUG OAuth: Raw API response:', userData);
+          setCurrentUser({
+            id: userData.sub, // API-ul returnează 'sub' în loc de 'id'
+            email: userData.email,
+            username: userData.name,
+            role: userData.role,
+            created_at: '', // Nu avem aceste date din API-ul /me
+            updated_at: ''  // Nu avem aceste date din API-ul /me
+          });
         }
       } catch (error) {
         console.error('Error getting current user:', error);
@@ -68,7 +76,11 @@ export default function OAuthUsersManagement() {
   // Check if user is admin and trying to edit/delete themselves
   const isCurrentUserAdmin = currentUser?.role === 'admin';
   const canEditUser = (user: OAuthUser) => {
-    return !isCurrentUserAdmin || user.id !== currentUser?.id;
+    // Protejează utilizatorii cu același email (nu neapărat același ID)
+    const isSameEmail = isCurrentUserAdmin && user.email === currentUser?.email;
+    const result = !isCurrentUserAdmin || !isSameEmail;
+   
+    return result;
   };
 
   useEffect(() => {

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log("🔍 Next.js API: Successfully fetched admin info");
+    console.log("🔍 Next.js API: Successfully fetched admin info:", data);
     return NextResponse.json(data);
 
   } catch (error) {

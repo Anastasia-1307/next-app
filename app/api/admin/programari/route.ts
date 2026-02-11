@@ -3,9 +3,10 @@ import { getAuthToken } from '@/lib/cookie-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies or Authorization header
+    // Try to get token from Authorization header first
     let token = request.headers.get('authorization')?.replace('Bearer ', '');
     
+    // If no Authorization header, try to get from cookies
     if (!token) {
       const cookieToken = request.cookies.get('auth_token')?.value;
       token = cookieToken;
@@ -27,6 +28,17 @@ export async function GET(request: NextRequest) {
       },
       credentials: 'include',
     });
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const errorText = await response.text();
+      console.error('Resource server returned non-JSON response:', errorText);
+      return NextResponse.json(
+        { error: 'Resource server error', details: errorText },
+        { status: response.status }
+      );
+    }
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });

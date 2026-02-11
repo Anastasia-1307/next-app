@@ -126,8 +126,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id?: string }> }) {
   try {
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID parameter is required' },
+        { status: 400 }
+      );
+    }
     // Try to get token from Authorization header first
     let token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -146,7 +153,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json();
 
     // Forward request to resource server with Authorization header
-    const response = await fetch(`http://localhost:5000/api/admin/users/${params.id}`, {
+    const response = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -179,8 +186,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id?: string }> }) {
   try {
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID parameter is required' },
+        { status: 400 }
+      );
+    }
     // Try to get token from Authorization header first
     let token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -197,7 +211,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     // Forward request to resource server with Authorization header
-    const response = await fetch(`http://localhost:5000/api/admin/users/${params.id}`, {
+    const response = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -44,7 +44,15 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
         
         if (response.ok) {
           const userData = await response.json();
-          setCurrentUser(userData.user);
+          console.log('🔍 DEBUG: Raw API response:', userData);
+          setCurrentUser({
+            id: userData.sub, // API-ul returnează 'sub' în loc de 'id'
+            email: userData.email,
+            username: userData.name,
+            role: userData.role,
+            created_at: '', // Nu avem aceste date din API-ul /me
+            updated_at: ''  // Nu avem aceste date din API-ul /me
+          });
         }
       } catch (error) {
         console.error('Error getting current user:', error);
@@ -57,7 +65,21 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
   // Check if user is admin and trying to edit/delete themselves
   const isCurrentUserAdmin = currentUser?.role === 'admin';
   const canEditUser = (user: User) => {
-    return !isCurrentUserAdmin || user.id !== currentUser?.id;
+    // Protejează utilizatorii cu același email (nu neapărat același ID)
+    const isSameEmail = isCurrentUserAdmin && user.email === currentUser?.email;
+    const result = !isCurrentUserAdmin || !isSameEmail;
+    console.log('🔍 DEBUG:', { 
+      currentUser, 
+      isCurrentUserAdmin, 
+      userId: user.id, 
+      currentUserId: currentUser?.id, 
+      userEmail: user.email,
+      currentUserEmail: currentUser?.email,
+      isSameEmail,
+      canEdit: result,
+      message: isSameEmail ? 'ACELAȘI EMAIL - PROTEJAT' : 'EMAIL DIFERIT - PERMIS'
+    });
+    return result;
   };
 
   // Fetch users on component mount - only if no initial users provided

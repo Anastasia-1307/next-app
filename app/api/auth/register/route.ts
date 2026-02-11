@@ -3,37 +3,37 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, username, password } = await request.json();
 
-    if (!email || !password) {
+    if (!email || !username || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Email, username, and password are required' },
         { status: 400 }
       );
     }
 
-    console.log('🔍 Server Login - Authenticating user:', email);
+    console.log('🔍 Server Register - Creating user:', email);
     
-    // Authenticate with auth server
-    const authResponse = await fetch('http://localhost:4000/auth/login', {
+    // Register with auth server
+    const authResponse = await fetch('http://localhost:4000/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, username, password }),
     });
 
     if (!authResponse.ok) {
       const errorText = await authResponse.text();
-      console.error('❌ Server Login - Authentication failed:', errorText);
+      console.error('❌ Server Register - Registration failed:', errorText);
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Registration failed' },
         { status: 401 }
       );
     }
 
     const authData = await authResponse.json();
-    console.log('✅ Server Login - Authentication successful');
+    console.log('✅ Server Register - Registration successful');
 
     // Set secure HTTP-only cookies
     const cookieStore = await cookies();
@@ -58,19 +58,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('✅ Server Login - Cookies set successfully');
+    console.log('✅ Server Register - Cookies set successfully');
 
     return NextResponse.json({
       success: true,
       userData: {
         email: authData.user.email,
-        name: authData.user.name,
+        name: authData.user.username,
         role: authData.user.role,
       }
     });
 
   } catch (error) {
-    console.error('❌ Server Login - Error:', error);
+    console.error('❌ Server Register - Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

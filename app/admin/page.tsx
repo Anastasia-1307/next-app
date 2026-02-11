@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@/lib/api-interceptor';
 import { useEffect, useState } from 'react';
 import LogoutButton from "@/components/layout/LogoutButton";
 import UserManagement from "@/components/admin/UserManagement";
@@ -126,32 +127,16 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Use the same method as UserManagement - fetch with credentials
+        // Use the same method as UserManagement - fetch with api interceptor
         const [usersRes, logsRes, oauthUsersRes, medicRes, programRes, specialitatiRes, programariRes, resetTokensRes] = await Promise.all([
-          fetch('/api/admin/users', {
-            credentials: 'include'
-          }),
-          fetch('/api/admin/user-logs', {
-            credentials: 'include'
-          }),
-          fetch('/api/admin/oauth-users', {
-            credentials: 'include'
-          }),
-          fetch('/api/admin/medic-info', {
-            credentials: 'include'
-          }),
-          fetch('/api/admin/program-lucru', {
-            credentials: 'include'
-          }),
-          fetch('/api/admin/specialitati', {
-            credentials: 'include'
-          }),
-          fetch('/api/admin/programari', {
-            credentials: 'include'
-          }),
-          fetch('/api/admin/password-reset-tokens', {
-            credentials: 'include'
-          })
+          api.get('/api/admin/users'),
+          api.get('/api/admin/user-logs'),
+          api.get('/api/admin/oauth-users'),
+          api.get('/api/admin/medic-info'), // Changed from '/api/admin/medicinfo' to '/api/admin/medic-info'
+          api.get('/api/admin/program-lucru'),
+          api.get('/api/admin/specialitati'),
+          api.get('/api/admin/programari'),
+          api.get('/api/admin/password-reset-tokens')
         ]);
 
         // Check responses
@@ -249,7 +234,7 @@ export default function AdminPage() {
       case "programari":
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Programări ({programari.length})</h3>
+            <h3 className="text-lg font-semibold mb-4">Programări </h3>
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -324,7 +309,7 @@ activeTab === tab.id
 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
 } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
 >
-{tab.label} ({tab.count})
+{tab.label} 
 </button>
 ))}
 </nav>

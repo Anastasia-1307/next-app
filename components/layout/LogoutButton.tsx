@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { logout } from "@/lib/refresh-token-client";
 import Button from "@/components/ui/Button";
 
 export default function LogoutButton() {
@@ -13,35 +14,17 @@ export default function LogoutButton() {
       setIsLoading(true);
       console.log('🔍 LOGOUT BUTTON - Starting logout process');
       
-      // Apelăm API-ul de logout pentru a șterge cookie-ul server-side
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        console.error('🔍 LOGOUT BUTTON - Logout API failed:', response.status);
-        throw new Error('Logout failed');
-      }
-
-      const result = await response.json();
-      console.log('🔍 LOGOUT BUTTON - Logout API response:', result);
+      // Use the improved logout function that handles everything
+      await logout();
       
-      // Ștergem și datele din sessionStorage
-      sessionStorage.removeItem("pkce_verifier");
-      sessionStorage.removeItem("pkce_challenge");
-      
-      console.log('🔍 LOGOUT BUTTON - Redirecting to login');
-      
-      // Redirect la login
-      router.replace("/login");
+      console.log('🔍 LOGOUT BUTTON - Logout completed');
       
     } catch (error) {
       console.error('🔍 LOGOUT BUTTON - Error:', error);
       // În caz de eroare, încercăm să redirectăm oricum la login
-      router.replace("/login");
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     } finally {
       setIsLoading(false);
     }

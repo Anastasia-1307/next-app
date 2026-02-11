@@ -47,7 +47,7 @@ interface MedicInfo {
 
   prenume: string;
 
-  telefon?: string;
+
 
   specialitate_id?: number;
 
@@ -651,7 +651,6 @@ export default function PacientPage() {
 
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experiență</th>
 
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefon</th>
 
                     </tr>
 
@@ -669,7 +668,7 @@ export default function PacientPage() {
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.experienta} ani</td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.telefon || '-'}</td>
+                     
 
                       </tr>
 
@@ -722,8 +721,6 @@ export default function PacientPage() {
                     {specialitati.map((specialitate) => (
 
                       <tr key={specialitate.id}>
-
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{specialitate.id}</td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{specialitate.nume}</td>
 

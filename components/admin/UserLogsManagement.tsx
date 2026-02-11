@@ -17,6 +17,8 @@ export default function UserLogsManagement() {
   const [logs, setLogs] = useState<UserLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLog, setSelectedLog] = useState<UserLog | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     fetchLogs();
@@ -64,10 +66,28 @@ export default function UserLogsManagement() {
     }
   };
 
+  const handleViewDetails = (log: UserLog) => {
+    setSelectedLog(log);
+    setShowDetailsModal(true);
+  };
+
+  const closeModal = () => {
+    setSelectedLog(null);
+    setShowDetailsModal(false);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">User Logs</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium text-gray-900">User Logs</h3>
+          <button
+            onClick={fetchLogs}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
       
       {loading && (
@@ -118,8 +138,8 @@ export default function UserLogsManagement() {
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {log.details ? (
                       <button
-                        className="text-blue-600 hover:text-blue-800 underline"
-                        onClick={() => alert(JSON.stringify(log.details, null, 2))}
+                        className="text-blue-600 hover:text-blue-800 underline font-medium"
+                        onClick={() => handleViewDetails(log)}
                       >
                         View Details
                       </button>
@@ -135,6 +155,74 @@ export default function UserLogsManagement() {
               <p className="text-gray-500">Nu sunt loguri</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {showDetailsModal && selectedLog && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Log Details</h3>
+              <button
+                onClick={closeModal}
+                className="bg-white rounded-md p-2 text-gray-400 hover:text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-semibold text-gray-700">Action:</span>
+                  <span className={`ml-2 px-2 py-1 text-xs rounded-full ${getActionColor(selectedLog.action)}`}>
+                    {selectedLog.action}
+                  </span>
+                </div>
+                
+                <div>
+                  <span className="font-semibold text-gray-700">User ID:</span>
+                  <span className="ml-2 text-gray-900">{selectedLog.user_id || 'System'}</span>
+                </div>
+                
+                <div>
+                  <span className="font-semibold text-gray-700">Resource:</span>
+                  <span className="ml-2 text-gray-900">{selectedLog.resource || '-'}</span>
+                </div>
+                
+                <div>
+                  <span className="font-semibold text-gray-700">IP Address:</span>
+                  <span className="ml-2 text-gray-900">{selectedLog.ip_address || '-'}</span>
+                </div>
+              </div>
+              
+              <div>
+                <span className="font-semibold text-gray-700">Timestamp:</span>
+                <span className="ml-2 text-gray-900">{formatDate(selectedLog.created_at)}</span>
+              </div>
+              
+              {selectedLog.details && (
+                <div>
+                  <span className="font-semibold text-gray-700 block mb-2">Details:</span>
+                  <div className="p-4 bg-gray-100 rounded-md max-h-96 overflow-y-auto">
+                    <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+                      {JSON.stringify(selectedLog.details, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

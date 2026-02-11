@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthToken } from '@/lib/cookie-utils';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params;
     const token = await getAuthToken();
 
     if (!token) {
@@ -15,7 +16,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const body = await request.json();
 
     // Forward request to resource server with Authorization header
-    const resourceUrl = `http://localhost:5000/api/pacient/programari/${params.id}`;
+    const resourceUrl = `http://localhost:5000/api/pacient/programari/${id}`;
     const response = await fetch(resourceUrl, {
       method: 'PATCH',
       headers: {
