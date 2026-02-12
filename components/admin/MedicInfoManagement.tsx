@@ -25,8 +25,8 @@ interface MedicInfoFormData {
   specialitate_id: number;
 }
 
-export default function MedicInfoManagement() {
-  const [medici, setMedici] = useState<MedicInfo[]>([]);
+export default function MedicInfoManagement({ initialMedici }: { initialMedici?: MedicInfo[] }) {
+  const [medici, setMedici] = useState<MedicInfo[]>(initialMedici || []);
   const [specialitati, setSpecialitati] = useState<{id: number, nume: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,13 +37,18 @@ export default function MedicInfoManagement() {
     nume: '',
     prenume: '',
     experienta: 0,
-    specialitate_id: 0
+    specialitate_id: 0,
   });
 
+  // Fetch data only if no initial data provided
   useEffect(() => {
-    fetchMedici();
-    fetchSpecialitati();
-  }, []);
+    if (!initialMedici || initialMedici.length === 0) {
+      fetchMedici();
+    }
+  }, [initialMedici]);
+  useEffect(() => {
+  fetchSpecialitati();
+}, []);
 
   const fetchMedici = async () => {
     try {
@@ -51,8 +56,13 @@ export default function MedicInfoManagement() {
       const response = await fetch('/api/admin/medic-info');
       const data = await response.json();
       
+      console.log('🔍 MEDICI DATA RECEIVED:', data);
+      console.log('🔍 RESPONSE STATUS:', response.status);
+      console.log('🔍 IS ARRAY:', Array.isArray(data));
+      console.log('🔍 MEDICI STATE AFTER SET:', medici.length);
+      
       if (response.ok) {
-        setMedici(data);
+        setMedici(Array.isArray(data) ? data : []);
       } else {
         setError(data.error || 'Failed to fetch medici info');
       }
@@ -61,6 +71,7 @@ export default function MedicInfoManagement() {
       setError('Failed to fetch medici info');
     } finally {
       setLoading(false);
+      console.log('🔍 MEDICI FINAL STATE:', medici.length);
     }
   };
 
@@ -69,11 +80,17 @@ export default function MedicInfoManagement() {
       const response = await fetch('/api/admin/specialitati');
       const data = await response.json();
       
+      console.log('🔍 SPECIALITATI DATA RECEIVED:', data);
+      console.log('🔍 RESPONSE STATUS:', response.status);
+      console.log('🔍 IS ARRAY:', Array.isArray(data));
+      
       if (response.ok) {
-        setSpecialitati(data);
+        // Ensure we always set an array, even if API returns wrong format
+        setSpecialitati(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error('Error fetching specialități:', error);
+      setSpecialitati([]); // Ensure empty array on error
     }
   };
 
@@ -159,60 +176,64 @@ export default function MedicInfoManagement() {
     setIsEditModalOpen(true);
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">Gestionarea medicilor</h3>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            Adaugă Medic
-          </button>
-        </div>
+ return (
+  <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="px-6 py-4 border-b border-gray-200">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900">Medici</h2>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          Adaugă Medic
+        </button>
       </div>
-      
-      {loading && (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      )}
-      
+
+
+
       {error && (
-        <div className="px-6 py-4 bg-red-50 border-b border-red-200">
-          <p className="text-red-600">{error}</p>
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded">
+          <strong>Eroare:</strong> {error}
         </div>
       )}
-      
-      {!loading && !error && (
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">Se încarcă datele...</div>
+        </div>
+      ) : medici.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No medici info found</p>
+        </div>
+      ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nume</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prenume</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialitate</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experiență</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nume</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prenume</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Specialitate</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Experiență</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
+
             <tbody className="bg-white divide-y divide-gray-200">
               {medici.map((medic) => (
                 <tr key={medic.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.nume}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.prenume}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 text-sm">{medic.id}</td>
+                  <td className="px-6 py-4 text-sm">{medic.nume}</td>
+                  <td className="px-6 py-4 text-sm">{medic.prenume}</td>
+                  <td className="px-6 py-4 text-sm">
                     {medic.specialitati?.nume || `ID: ${medic.specialitate_id}`}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{medic.experienta} ani</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 text-sm">{medic.experienta} ani</td>
+                  <td className="px-6 py-4 text-sm">
                     {new Date(medic.created_at).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-6 py-4 text-sm">
                     <button
                       onClick={() => openEditModal(medic)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
@@ -223,164 +244,150 @@ export default function MedicInfoManagement() {
                       onClick={() => handleDelete(medic.id)}
                       className="text-red-600 hover:text-red-900"
                     >
-                    Șterge
+                      Șterge
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          
-          {medici.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No medici info found</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Create Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Adaugă Medic</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nume</label>
-                <input
-                  type="text"
-                  value={formData.nume}
-                  onChange={(e) => setFormData({ ...formData, nume: e.target.value })}
-                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Prenume</label>
-                <input
-                  type="text"
-                  value={formData.prenume}
-                  onChange={(e) => setFormData({ ...formData, prenume: e.target.value })}
-                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Specialitate</label>
-                <select
-                  value={formData.specialitate_id}
-                  onChange={(e) => setFormData({ ...formData, specialitate_id: parseInt(e.target.value) })}
-                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
-                  required
-                >
-                  <option value="">Selectează specialitate</option>
-                  {specialitati.map((spec) => (
-                    <option key={spec.id} value={spec.id}>
-                      {spec.nume}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Experiență (ani)</label>
-                <input
-                  type="number"
-                  value={formData.experienta}
-                  onChange={(e) => setFormData({ ...formData, experienta: parseInt(e.target.value) })}
-                  className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
-                  min="0"
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-4">
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-              >
-                Anulează
-              </button>
-              <button
-                onClick={handleCreate}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Crează
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Medic</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nume</label>
-                <input
-                  type="text"
-                  value={formData.nume}
-                  onChange={(e) => setFormData({ ...formData, nume: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Prenume</label>
-                <input
-                  type="text"
-                  value={formData.prenume}
-                  onChange={(e) => setFormData({ ...formData, prenume: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Specialitate</label>
-                <select
-                  value={formData.specialitate_id}
-                  onChange={(e) => setFormData({ ...formData, specialitate_id: parseInt(e.target.value) })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  required
-                >
-                  {specialitati.map((spec) => (
-                    <option key={spec.id} value={spec.id}>
-                      {spec.nume}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Experiență (ani)</label>
-                <input
-                  type="number"
-                  value={formData.experienta}
-                  onChange={(e) => setFormData({ ...formData, experienta: parseInt(e.target.value) })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  min="0"
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-4">
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-              >
-               Anulează
-              </button>
-              <button
-                onClick={handleUpdate}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Actualizează
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
-  );
+
+    {/* Create Modal */}
+    {isCreateModalOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <h3 className="text-lg font-medium mb-4">Adaugă Medic</h3>
+
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Nume"
+              value={formData.nume}
+              onChange={(e) => setFormData({ ...formData, nume: e.target.value })}
+              className="w-full px-4 py-2 border rounded-md"
+            />
+
+            <input
+              type="text"
+              placeholder="Prenume"
+              value={formData.prenume}
+              onChange={(e) => setFormData({ ...formData, prenume: e.target.value })}
+              className="w-full px-4 py-2 border rounded-md"
+            />
+
+            <select
+              value={formData.specialitate_id}
+              onChange={(e) =>
+                setFormData({ ...formData, specialitate_id: parseInt(e.target.value) })
+              }
+              className="w-full px-4 py-2 border rounded-md"
+            >
+              <option value="0">Selectează specialitate</option>
+              {specialitati.map((spec) => (
+                <option key={spec.id} value={spec.id}>
+                  {spec.nume}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              placeholder="Experiență"
+              value={formData.experienta}
+              onChange={(e) =>
+                setFormData({ ...formData, experienta: parseInt(e.target.value) })
+              }
+              className="w-full px-4 py-2 border rounded-md"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setIsCreateModalOpen(false)}
+              className="bg-gray-300 px-4 py-2 rounded-md"
+            >
+              Anulează
+            </button>
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md"
+            >
+              Creează
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Edit Modal */}
+    {isEditModalOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <h3 className="text-lg font-medium mb-4">Edit Medic</h3>
+
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Nume"
+              value={formData.nume}
+              onChange={(e) => setFormData({ ...formData, nume: e.target.value })}
+              className="w-full px-4 py-2 border rounded-md"
+            />
+
+            <input
+              type="text"
+              placeholder="Prenume"
+              value={formData.prenume}
+              onChange={(e) => setFormData({ ...formData, prenume: e.target.value })}
+              className="w-full px-4 py-2 border rounded-md"
+            />
+
+            <select
+              value={formData.specialitate_id}
+              onChange={(e) =>
+                setFormData({ ...formData, specialitate_id: parseInt(e.target.value) })
+              }
+              className="w-full px-4 py-2 border rounded-md"
+            >
+              <option value="0">Selectează specialitate</option>
+              {specialitati.map((spec) => (
+                <option key={spec.id} value={spec.id}>
+                  {spec.nume}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              placeholder="Experiență"
+              value={formData.experienta}
+              onChange={(e) =>
+                setFormData({ ...formData, experienta: parseInt(e.target.value) })
+              }
+              className="w-full px-4 py-2 border rounded-md"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setIsEditModalOpen(false)}
+              className="bg-gray-300 px-4 py-2 rounded-md"
+            >
+              Anulează
+            </button>
+            <button
+              onClick={handleUpdate}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md"
+            >
+              Actualizează
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }

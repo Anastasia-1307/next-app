@@ -131,7 +131,7 @@ export default function AdminPage() {
         const [usersRes, logsRes, oauthUsersRes, medicRes, programRes, specialitatiRes, programariRes, resetTokensRes] = await Promise.all([
           api.get('/api/admin/users'),
           api.get('/api/admin/user-logs'),
-          api.get('/api/admin/oauth-users'),
+          api.get('/api/admin/oauth-users-merged'),
           api.get('/api/admin/medic-info'), // Changed from '/api/admin/medicinfo' to '/api/admin/medic-info'
           api.get('/api/admin/program-lucru'),
           api.get('/api/admin/specialitati'),
@@ -170,10 +170,18 @@ export default function AdminPage() {
         setMedicInfo(Array.isArray(medicData) ? medicData : []);
         setProgramLucru(Array.isArray(programData) ? programData : []);
         setSpecialitati(Array.isArray(specialitatiData) ? specialitatiData : []);
-        setProgramari(Array.isArray(programariData.programari) ? programariData.programari : []);
+        setProgramari(Array.isArray(programariData) ? programariData : (programariData && programariData.programari ? programariData.programari : []));
         setPasswordResetTokens(Array.isArray(resetTokensData.tokens) ? resetTokensData.tokens : []);
         
         console.log('🔍 ADMIN PAGE: Data fetching completed successfully');
+        console.log('🔍 ADMIN PAGE: Final data state:', {
+          medicInfoLength: medicInfo.length,
+          specialitatiLength: specialitati.length,
+          programariLength: programari.length,
+          medicInfo: medicInfo,
+          specialitati: specialitati,
+          programari: programari
+        });
       } catch (error) {
         console.error('🔍 ADMIN PAGE: Failed to fetch admin data:', error);
         setError(error instanceof Error ? error.message : 'Unknown error occurred');
@@ -223,12 +231,14 @@ export default function AdminPage() {
         return <OAuthUsersManagement />;
 
       case "medic":
-        return <MedicInfoManagement />;
+        console.log('🔍 ADMIN PAGE: Rendering medic tab, medicInfo length:', medicInfo.length);
+        return <MedicInfoManagement initialMedici={medicInfo} />;
 
       case "program":
         return <ProgramLucruManagement />;
 
       case "specialitati":
+        console.log('🔍 ADMIN PAGE: Rendering specialitati tab, specialitati length:', specialitati.length);
         return <SpecialitatiManagement />;
 
       case "programari":

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Get token from cookies or Authorization header
     let token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward request to resource server
-    const response = await fetch('http://localhost:5000/api/admin/oauth-users', {
-      method: 'GET',
+    const response = await fetch(`http://localhost:5000/api/admin/users/${params.id}`, {
+      method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -28,9 +28,6 @@ export async function GET(request: NextRequest) {
     });
 
     const data = await response.json();
-    console.log('🔍 OAuth Users API Response:', data);
-    
-    // Return the OAuth users directly
     return NextResponse.json(data, { status: response.status });
 
   } catch (error) {

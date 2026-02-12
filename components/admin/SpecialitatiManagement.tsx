@@ -15,8 +15,8 @@ interface SpecialitateFormData {
   descriere?: string;
 }
 
-export default function SpecialitatiManagement() {
-  const [specialitati, setSpecialitati] = useState<Specialitate[]>([]);
+export default function SpecialitatiManagement({ initialSpecialitati }: { initialSpecialitati?: Specialitate[] }) {
+  const [specialitati, setSpecialitati] = useState<Specialitate[]>(initialSpecialitati || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -27,8 +27,11 @@ export default function SpecialitatiManagement() {
     descriere: ''
   });
 
+  // Fetch data only if no initial data provided
   useEffect(() => {
-    fetchSpecialitati();
+    if (!initialSpecialitati || initialSpecialitati.length === 0) {
+      fetchSpecialitati();
+    }
   }, []);
 
   const fetchSpecialitati = async () => {
@@ -37,8 +40,13 @@ export default function SpecialitatiManagement() {
       const response = await fetch('/api/admin/specialitati');
       const data = await response.json();
       
+      console.log('🔍 SPECIALITATI DATA RECEIVED:', data);
+      console.log('🔍 RESPONSE STATUS:', response.status);
+      console.log('🔍 IS ARRAY:', Array.isArray(data));
+      console.log('🔍 SPECIALITATI STATE AFTER SET:', specialitati.length);
+      
       if (response.ok) {
-        setSpecialitati(data);
+        setSpecialitati(Array.isArray(data) ? data : []);
       } else {
         setError(data.error || 'Failed to fetch specialități');
       }
@@ -47,6 +55,7 @@ export default function SpecialitatiManagement() {
       setError('Failed to fetch specialități');
     } finally {
       setLoading(false);
+      console.log('🔍 SPECIALITATI FINAL STATE:', specialitati.length);
     }
   };
 

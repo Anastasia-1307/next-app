@@ -139,7 +139,7 @@ export default function OAuthUsersManagement() {
     }
 
     try {
-      const response = await fetch(`/api/admin/oauth-users/${userId}`, {
+      const response = await fetch(`/api/admin/oauth-users-merged/${userId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -160,8 +160,8 @@ export default function OAuthUsersManagement() {
     
     try {
       const url = isEditModalOpen && selectedUser 
-        ? `/api/admin/oauth-users/${selectedUser.id}`
-        : '/api/admin/oauth-users';
+        ? `/api/admin/oauth-users-merged/${selectedUser.id}`
+        : '/api/admin/oauth-users-merged';
       
       const method = isEditModalOpen && selectedUser ? 'PUT' : 'POST';
       

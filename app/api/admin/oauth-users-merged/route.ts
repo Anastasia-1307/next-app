@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward request to resource server - use same endpoint as regular users
-    const response = await fetch('http://localhost:5000/api/admin/users', {
+    const response = await fetch('http://localhost:5000/api/admin/oauth-users-merged', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -28,7 +28,17 @@ export async function GET(request: NextRequest) {
     });
 
     const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    console.log('🔍 OAuth Users Merged API Response:', data);
+    
+    // Extract OAuth users from the combined users response
+    const allUsers = data.users || [];
+    const oauthUsers = allUsers.filter((user: any) => 
+      user.password_hash === 'oauth_placeholder' || 
+      user.userType === 'oauth' ||
+      (user.email && user.email.includes('oauth'))
+    );
+    
+    return NextResponse.json({ users: oauthUsers }, { status: response.status });
 
   } catch (error) {
     console.error('API proxy error:', error);
