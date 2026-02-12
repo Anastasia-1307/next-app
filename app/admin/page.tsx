@@ -8,8 +8,8 @@ import OAuthUsersManagement from "@/components/admin/OAuthUsersManagement";
 import UserLogsManagement from "@/components/admin/UserLogsManagement";
 import SpecialitatiManagement from "@/components/admin/SpecialitatiManagement";
 import ProgramLucruManagement from "@/components/admin/ProgramLucruManagement";
-import MedicInfoManagement from "@/components/admin/MedicInfoManagement";
 import PasswordResetTokensManagement from "@/components/admin/PasswordResetTokensManagement";
+import MediciManagement from "@/components/admin/MediciManagement";
 
 // TypeScript interfaces matching the real database schema
 interface User {
@@ -127,23 +127,36 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('🔍 ADMIN PAGE: Starting data fetch...');
+        
         // Use the same method as UserManagement - fetch with api interceptor
         const [usersRes, logsRes, oauthUsersRes, medicRes, programRes, specialitatiRes, programariRes, resetTokensRes] = await Promise.all([
           api.get('/api/admin/users'),
-          api.get('/api/admin/user-logs'),
+          api.get('/api/admin/logs'),
           api.get('/api/admin/oauth-users-merged'),
-          api.get('/api/admin/medic-info'), // Changed from '/api/admin/medicinfo' to '/api/admin/medic-info'
+          api.get('/api/admin/medic-info'), 
           api.get('/api/admin/program-lucru'),
           api.get('/api/admin/specialitati'),
           api.get('/api/admin/programari'),
           api.get('/api/admin/password-reset-tokens')
         ]);
 
+        console.log('🔍 ADMIN PAGE: API Responses received:');
+        console.log('🔍 usersRes status:', usersRes.status);
+        console.log('🔍 logsRes status:', logsRes.status);
+        console.log('🔍 oauthUsersRes status:', oauthUsersRes.status);
+        console.log('🔍 medicRes status:', medicRes.status);
+        console.log('🔍 programRes status:', programRes.status);
+        console.log('🔍 specialitatiRes status:', specialitatiRes.status);
+        console.log('🔍 programariRes status:', programariRes.status);
+        console.log('🔍 resetTokensRes status:', resetTokensRes.status);
+
         // Check responses
         const responses = [usersRes, logsRes, oauthUsersRes, medicRes, programRes, specialitatiRes, programariRes, resetTokensRes];
         const failedResponses = responses.filter(res => !res.ok);
         
         if (failedResponses.length > 0) {
+          console.error('🔍 ADMIN PAGE: Failed responses:', failedResponses.map(r => ({ status: r.status, url: r.url })));
           throw new Error(`API requests failed: ${failedResponses.map(r => r.status).join(', ')}`);
         }
 
@@ -159,28 +172,86 @@ export default function AdminPage() {
           resetTokensRes.json()
         ]);
 
-        // Extract OAuth users from the OAuth users API response
-        const allUsers = usersData.users || [];
+        console.log('🔍 ADMIN PAGE: Raw API responses:');
+        console.log('🔍 usersData:', usersData);
+        console.log('🔍 logsData:', logsData);
+        console.log('🔍 oauthUsersData:', oauthUsersData);
+        console.log('🔍 oauthUsersData type:', typeof oauthUsersData);
+        console.log('🔍 oauthUsersData.users:', oauthUsersData?.users);
+        console.log('🔍 oauthUsersData.users type:', typeof oauthUsersData?.users);
+        console.log('🔍 oauthUsersData.users isArray:', Array.isArray(oauthUsersData?.users));
+        console.log('🔍 medicData:', medicData);
+        console.log('🔍 programData:', programData);
+        console.log('🔍 specialitatiData:', specialitatiData);
+        console.log('🔍 programariData:', programariData);
+        console.log('🔍 resetTokensData:', resetTokensData);
+
+        // Extract users from API responses (now properly separated by backend)
+        const classicUsers = usersData.users || [];
         const oauthUsersDataList = oauthUsersData.users || [];
-        const classicUsers = allUsers.filter((user: any) => user.userType === 'classic');
         
-        setUsers(classicUsers);
-        setUserLogs(Array.isArray(logsData.logs) ? logsData.logs : []);
-        setOAuthUsers(oauthUsersDataList);
-        setMedicInfo(Array.isArray(medicData) ? medicData : []);
-        setProgramLucru(Array.isArray(programData) ? programData : []);
-        setSpecialitati(Array.isArray(specialitatiData) ? specialitatiData : []);
-        setProgramari(Array.isArray(programariData) ? programariData : (programariData && programariData.programari ? programariData.programari : []));
-        setPasswordResetTokens(Array.isArray(resetTokensData.tokens) ? resetTokensData.tokens : []);
+        console.log('🔍 ADMIN PAGE: User filtering results:');
+        console.log('🔍 classicUsers length:', classicUsers.length);
+        console.log('🔍 oauthUsersDataList length:', oauthUsersDataList.length);
+        console.log('🔍 sample classicUsers:', classicUsers.slice(0, 2));
+        console.log('🔍 sample oauthUsers:', oauthUsersDataList.slice(0, 2));
+        
+        // Add userType property for consistency
+        const classicUsersWithType = classicUsers.map((user: any) => ({
+          ...user,
+          userType: 'classic'
+        }));
+        
+        const oauthUsersWithType = oauthUsersDataList.map((user: any) => ({
+          ...user,
+          userType: 'oauth'
+        }));
+        
+        console.log('🔍 ADMIN PAGE: Setting state with data:');
+        console.log('🔍 classicUsersWithType:', classicUsersWithType);
+        console.log('🔍 oauthUsersWithType:', oauthUsersWithType);
+        console.log('🔍 logsData (array?):', Array.isArray(logsData), logsData);
+        console.log('🔍 medicData (array?):', Array.isArray(medicData), medicData);
+        console.log('🔍 specialitatiData (array?):', Array.isArray(specialitatiData), specialitatiData);
+        console.log('🔍 programData (array?):', Array.isArray(programData), programData);
+        console.log('🔍 programariData (array?):', Array.isArray(programariData), programariData);
+        console.log('🔍 resetTokensData:', resetTokensData);
+        
+        // Ensure all data is properly formatted before setting state
+        const finalUserLogs = Array.isArray(logsData) ? logsData : [];
+        const finalMedicInfo = Array.isArray(medicData) ? medicData : [];
+        const finalSpecialitati = Array.isArray(specialitatiData) ? specialitatiData : [];
+        const finalProgramLucru = Array.isArray(programData) ? programData : [];
+        const finalProgramari = Array.isArray(programariData) ? programariData : (programariData && programariData.programari ? programariData.programari : []);
+        const finalResetTokens = Array.isArray(resetTokensData.tokens) ? resetTokensData.tokens : [];
+        
+        console.log('🔍 ADMIN PAGE: Final processed data:');
+        console.log('🔍 finalUserLogs length:', finalUserLogs.length);
+        console.log('🔍 finalMedicInfo length:', finalMedicInfo.length);
+        console.log('🔍 finalSpecialitati length:', finalSpecialitati.length);
+        console.log('🔍 finalProgramLucru length:', finalProgramLucru.length);
+        console.log('🔍 finalProgramari length:', finalProgramari.length);
+        console.log('🔍 finalResetTokens length:', finalResetTokens.length);
+        
+        setUsers(classicUsersWithType);
+        setUserLogs(finalUserLogs);
+        setOAuthUsers(oauthUsersWithType);
+        setMedicInfo(finalMedicInfo);
+        setProgramLucru(finalProgramLucru);
+        setSpecialitati(finalSpecialitati);
+        setProgramari(finalProgramari);
+        setPasswordResetTokens(finalResetTokens);
         
         console.log('🔍 ADMIN PAGE: Data fetching completed successfully');
         console.log('🔍 ADMIN PAGE: Final data state:', {
-          medicInfoLength: medicInfo.length,
-          specialitatiLength: specialitati.length,
-          programariLength: programari.length,
-          medicInfo: medicInfo,
-          specialitati: specialitati,
-          programari: programari
+          usersLength: classicUsersWithType.length,
+          userLogsLength: Array.isArray(logsData) ? logsData.length : 0,
+          oauthUsersLength: oauthUsersDataList.length,
+          medicInfoLength: Array.isArray(medicData) ? medicData.length : 0,
+          programLucruLength: Array.isArray(programData) ? programData.length : 0,
+          specialitatiLength: Array.isArray(specialitatiData) ? specialitatiData.length : 0,
+          programariLength: Array.isArray(programariData) ? programariData.length : 0,
+          passwordResetTokensLength: resetTokensData.tokens?.length || 0
         });
       } catch (error) {
         console.error('🔍 ADMIN PAGE: Failed to fetch admin data:', error);
@@ -225,21 +296,21 @@ export default function AdminPage() {
         return <UserManagement users={users} />;
 
       case "logs":
-        return <UserLogsManagement />;
+        return <UserLogsManagement initialLogs={userLogs} />;
 
       case "oauth":
-        return <OAuthUsersManagement />;
+        return <OAuthUsersManagement initialOAuthUsers={oauthUsers} />;
 
-      case "medic":
-        console.log('🔍 ADMIN PAGE: Rendering medic tab, medicInfo length:', medicInfo.length);
-        return <MedicInfoManagement initialMedici={medicInfo} />;
+      case "medici":
+        console.log('🔍 ADMIN PAGE: Rendering medici tab, medicInfo length:', medicInfo.length);
+        return <MediciManagement initialMedici={medicInfo} initialSpecialitati={specialitati} />;
 
       case "program":
-        return <ProgramLucruManagement />;
+        return <ProgramLucruManagement initialProgramLucru={programLucru} />;
 
       case "specialitati":
         console.log('🔍 ADMIN PAGE: Rendering specialitati tab, specialitati length:', specialitati.length);
-        return <SpecialitatiManagement />;
+        return <SpecialitatiManagement initialSpecialitati={specialitati} />;
 
       case "programari":
         return (
@@ -295,41 +366,38 @@ export default function AdminPage() {
         </div>
       </div>
 
-<div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-<div className="px-4 py-6 sm:px-0">
-{/* Tab Navigation */}
-<div className="mb-8">
-<nav className="flex space-x-8" aria-label="Tabs">
-{[
-{ id: "users", label: "Utilizatori", count: users.length },
-{ id: "logs", label: "Log-uri", count: userLogs.length },
-{ id: "oauth", label: "OAuth", count: oauthUsers.length },
-{ id: "medic", label: "Medici", count: medicInfo.length },
-{ id: "program", label: "Program Lucru", count: programLucru.length },
-{ id: "specialitati", label: "Specialități", count: specialitati.length },
-{ id: "programari", label: "Programări", count: programari.length },
-{ id: "reset-tokens", label: "Token-uri Resetare", count: passwordResetTokens.length },
-].map((tab) => (
-<button
-key={tab.id}
-onClick={() => setActiveTab(tab.id)}
-className={`${
-activeTab === tab.id
-? 'border-blue-500 text-blue-600'
-: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
->
-{tab.label} 
-</button>
-))}
-</nav>
-</div>
-          </div>
-
-          {/* Tab Content */}
-          {renderTabContent()}
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <nav className="flex space-x-8" aria-label="Tabs">
+            {[
+              { id: "users", label: "Utilizatori Classic", count: users.filter(u => u.userType !== 'oauth').length },
+              { id: "logs", label: "Log-uri", count: userLogs.length },
+              { id: "oauth", label: "Utilizatori OAuth", count: oauthUsers.length },
+              { id: "medici", label: "Medici", count: medicInfo.length },
+              { id: "program", label: "Program Lucru", count: programLucru.length },
+              { id: "specialitati", label: "Specialități", count: specialitati.length },
+              { id: "programari", label: "Programări", count: programari.length },
+              { id: "reset-tokens", label: "Token-uri Resetare", count: passwordResetTokens.length },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
+
+        {/* Tab Content */}
+        {renderTabContent()}
       </div>
-    
+    </div>
   );
 }

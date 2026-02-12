@@ -23,6 +23,21 @@ interface ProgramLucru {
   updated_at: string;
 }
 
+interface MedicInfo {
+  id: number;
+  nume: string;
+  prenume: string;
+  experienta: number;
+  specialitate_id: number;
+  created_at: string;
+  updated_at: string;
+  specialitati?: {
+    id: number;
+    nume: string;
+    descriere?: string;
+  };
+}
+
 interface ProgramLucruFormData {
   user_id: string;
   medic_info_id: number;
@@ -31,10 +46,9 @@ interface ProgramLucruFormData {
   activ: boolean;
 }
 
-export default function ProgramLucruManagement() {
-  const [programLucru, setProgramLucru] = useState<ProgramLucru[]>([]);
-  const [medici, setMedici] = useState<User[]>([]);
-  const [medicInfoMap, setMedicInfoMap] = useState<Map<string, number>>(new Map()); // user_id -> medic_info_id
+export default function ProgramLucruManagement({ initialProgramLucru }: { initialProgramLucru?: ProgramLucru[] }) {
+  const [programLucru, setProgramLucru] = useState<ProgramLucru[]>(initialProgramLucru || []);
+  const [mediciInfo, setMediciInfo] = useState<MedicInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -44,7 +58,7 @@ export default function ProgramLucruManagement() {
   const [uiCount, setUiCount] = useState(0); // State dedicat pentru UI
   const [formData, setFormData] = useState<ProgramLucruFormData>({
     user_id: '', // Gol la început
-    medic_info_id: 0, // Va fi setat din mapare
+    medic_info_id: 0, // Va fi setat direct
     ora_inceput: '',
     ora_sfarsit: '',
     activ: true
@@ -53,165 +67,61 @@ export default function ProgramLucruManagement() {
   // Monitor programLucru state changes
   useEffect(() => {
     console.log("🔄 Frontend: programLucru state changed:", programLucru.length, programLucru);
-  console.log("🔄 Frontend: medici state changed:", medici.length, medici);
   }, [programLucru]);
 
-  // Fetch data on component mount
+  // Fetch data only if no initial data provided
   useEffect(() => {
-    const fetchData = async () => {
-    try {
-      // Fetch program lucru, medici users, and medic info
-      const [programRes, mediciRes, medicInfoRes] = await Promise.all([
-        api.get('/api/admin/program-lucru'),
-        api.get('/api/admin/users'),
-        api.get('/api/admin/medic-info')
-      ]);
+    if (!initialProgramLucru || initialProgramLucru.length === 0) {
+      const fetchData = async () => {
+        try {
+          // Fetch program lucru and medic info direct
+          const [programRes, medicInfoRes] = await Promise.all([
+            api.get('/api/admin/program-lucru'),
+            api.get('/api/admin/medic-info')
+          ]);
 
-      if (!programRes.ok) {
-        console.error("PROGRAM API ERROR:", programRes.status, programRes.statusText);
-        const errorText = await programRes.text();
-        console.error("PROGRAM API ERROR BODY:", errorText);
-      }
+        if (!programRes.ok) {
+          console.error("PROGRAM API ERROR:", programRes.status, programRes.statusText);
+          const errorText = await programRes.text();
+          console.error("PROGRAM API ERROR BODY:", errorText);
+        }
+        
+        if (!medicInfoRes.ok) {
+          console.error("MEDIC INFO API ERROR:", medicInfoRes.status, medicInfoRes.statusText);
+          const errorText = await medicInfoRes.text();
+          console.error("MEDIC INFO API ERROR BODY:", errorText);
+        }
       
-      if (!mediciRes.ok) {
-        console.error("MEDICI API ERROR:", mediciRes.status, mediciRes.statusText);
-        const errorText = await mediciRes.text();
-        console.error("MEDICI API ERROR BODY:", errorText);
-      }
+        if (!programRes.ok || !medicInfoRes.ok) {
+          throw new Error(`API requests failed: ${programRes.status}, ${medicInfoRes.status}`);
+        }
 
-      if (!medicInfoRes.ok) {
-        console.error("MEDIC INFO API ERROR:", medicInfoRes.status, medicInfoRes.statusText);
-        const errorText = await medicInfoRes.text();
-        console.error("MEDIC INFO API ERROR BODY:", errorText);
-      }
-      
-      if (!programRes.ok || !mediciRes.ok || !medicInfoRes.ok) {
-        throw new Error(`API requests failed: ${programRes.status}, ${mediciRes.status}, ${medicInfoRes.status}`);
-      }
+        const [programData, medicInfoData] = await Promise.all([
+          programRes.json(),
+          medicInfoRes.json()
+        ]);
 
-      const [programData, mediciData, medicInfoData] = await Promise.all([
-        programRes.json(),
-        mediciRes.json(),
-        medicInfoRes.json()
-      ]);
-
-      console.log("📊 Program data:", programData);
-      console.log("� Program data keys:", Object.keys(programData));
-      console.log("📊 Program data.programLucru:", programData.programLucru);
-      console.log("📊 Program data.programLucru type:", typeof programData.programLucru);
-      console.log("📊 Program data.programLucru isArray:", Array.isArray(programData.programLucru));
-      console.log("📊 Program data.programLucru length:", programData.programLucru?.length || 'undefined');
-      console.log("📊 Program data.programLucru[0]:", programData.programLucru?.[0]);
-      console.log("� Medici data:", mediciData);
-      console.log("🏥 Medic info data:", medicInfoData);
-
-console.log("REFRESH DATA:", programData);
-console.log("PROGRAM LUCRU STRUCTURE:", programData.programLucru?.[0]); // Verificăm primul element
+        console.log("📊 Program data:", programData);
+        console.log("📊 Medic info data:", medicInfoData);
+        
         setProgramLucru(Array.isArray(programData.programLucru) ? programData.programLucru : []);
-        
-        const allUsers = mediciData.users || [];
-        const medici = allUsers.filter((user: any) => user.role === 'medic');
-        console.log("ALL MEDICI:", medici);
-        setMedici(medici);
-
-        // Create mapping between user_id and medic_info_id
-        let medicInfoList = [];
-        
-        // Check if medicInfoData is an array directly
-        if (Array.isArray(medicInfoData)) {
-          medicInfoList = medicInfoData;
-          console.log("🔍 Medic info is direct array:", medicInfoList);
-        } else if (medicInfoData.medicInfo && Array.isArray(medicInfoData.medicInfo)) {
-          medicInfoList = medicInfoData.medicInfo;
-          console.log("🔍 Medic info in medicInfo property:", medicInfoList);
-        } else {
-          console.warn("⚠️ No medic info found! Checking alternative keys...");
-          // Try alternative keys
-          const alternativeKeys = ['medicInfos', 'data', 'results', 'items'];
-          for (const key of alternativeKeys) {
-            if (medicInfoData[key] && Array.isArray(medicInfoData[key])) {
-              console.log(`🔍 Found medic info in alternative key: ${key}`);
-              medicInfoList = medicInfoData[key];
-              break;
-            }
-          }
-        }
-        
-        const newMedicInfoMap = new Map<string, number>();
-        
-        console.log("👥 Available medici (users):", medici.map((m: any) => ({ id: m.id, email: m.email, name: m.name })));
-        console.log("🏥 Available medic info:", medicInfoList.map((m: any) => ({ id: m.id, email: m.email, nume: m.nume, prenume: m.prenume })));
-        
-        medicInfoList.forEach((medicInfo: any) => {
-          // Debug: afișăm detalii despre medicInfo
-          console.log(`🔍 Processing medicInfo:`, {
-            id: medicInfo.id,
-            nume: medicInfo.nume,
-            prenume: medicInfo.prenume,
-            email: medicInfo.email,
-            fullName: `${medicInfo.nume} ${medicInfo.prenume}`
-          });
-          
-          // Debug: afișăm detalii despre toți medici disponibili
-          console.log(`👥 Available medici for matching:`, medici.map((m: any) => ({
-            id: m.id,
-            email: m.email,
-            name: m.name,
-            username: m.username
-          })));
-          
-          // Find the corresponding user by name/username matching
-          const correspondingUser = medici.find((user: any) => {
-            const userName = user.name || user.username;
-            const medicFullName = medicInfo.nume + ' ' + medicInfo.prenume;
-            const medicReversedName = medicInfo.prenume + ' ' + medicInfo.nume;
-            
-            console.log(`🔍 Comparing: "${userName}" with "${medicFullName}" and "${medicReversedName}"`);
-            
-            return userName === medicFullName ||
-                   userName === medicReversedName ||
-                   userName?.trim() === medicFullName?.trim() ||
-                   userName?.trim() === medicReversedName?.trim() ||
-                   userName?.includes(medicInfo.nume) && userName?.includes(medicInfo.prenume) ||
-                   userName?.includes(medicInfo.prenume) && userName?.includes(medicInfo.nume);
-          });
-          
-          if (correspondingUser) {
-            newMedicInfoMap.set(correspondingUser.id, medicInfo.id);
-            console.log(`🔗 Mapped user ${correspondingUser.id} (${correspondingUser.email}) -> medic_info_id ${medicInfo.id}`);
-          } else {
-            console.warn(`⚠️ No match found for medic_info: ${medicInfo.nume} ${medicInfo.prenume}`);
-            console.warn(`⚠️ Tried to match with:`, medici.map((m: any) => ({ id: m.id, name: m.name || m.username, email: m.email })));
-          }
-        });
-        
-        setMedicInfoMap(newMedicInfoMap);
-        console.log("🗺️ Medic info map:", newMedicInfoMap);
-        
-        // Filter medici to only show those with valid medic_info mapping
-        const availableMedici = medici.filter((medic: any) => newMedicInfoMap.has(medic.id));
-        console.log("🔍 Available medici with mapping:", availableMedici);
-        console.log("🔍 Medici without mapping:", medici.filter((medic: any) => !newMedicInfoMap.has(medic.id)));
-        
-        // Update medici state to only include available medici
-        setMedici(availableMedici);
-        
-        if (medici.length === 0) {
-          console.warn("⚠️ No medici found in users endpoint. You need to add medici first.");
-        }
+        setMediciInfo(Array.isArray(medicInfoData) ? medicInfoData : []);
         
       } catch (error) {
         console.error('Error fetching data:', error);
         setError(error instanceof Error ? error.message : 'Unknown error occurred');
         setProgramLucru([]);
-        setMedici([]);
+        setMediciInfo([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+    } else {
+      setLoading(false);
+    }
+  }, [initialProgramLucru]);
 
   const handleSubmit = async (e: React.FormEvent, isEdit: boolean = false) => {
     e.preventDefault();
@@ -222,17 +132,6 @@ console.log("PROGRAM LUCRU STRUCTURE:", programData.programLucru?.[0]); // Verif
         : '/api/admin/program-lucru';
       
       const method = isEdit ? 'PUT' : 'POST';
-      
-      // Get medic_info_id from the mapping
-      const medicInfoId = medicInfoMap.get(formData.user_id);
-      console.log("🔍 DEBUG: Selected user_id:", formData.user_id);
-      console.log("🔍 DEBUG: Available medicInfoMap:", Array.from(medicInfoMap.entries()));
-      console.log("🔍 DEBUG: Found medicInfoId:", medicInfoId);
-      
-      if (!medicInfoId) {
-        console.error("🔍 ERROR: No medic_info_id found for user:", formData.user_id);
-        throw new Error('Medicul selectat nu are un medic_info_id valid. Asigură-te că medicul are înregistrare în Medic Info.');
-      }
       
       // Convert time from HH:MM format to ISO string for today's date
       const convertTimeToISO = (timeString: string) => {
@@ -254,8 +153,7 @@ console.log("PROGRAM LUCRU STRUCTURE:", programData.programLucru?.[0]); // Verif
       };
       
       const requestPayload = {
-        user_id: formData.user_id,
-        medic_info_id: medicInfoId,
+        medic_info_id: formData.medic_info_id,
         ora_inceput: convertTimeToISO(formData.ora_inceput),
         ora_sfarsit: convertTimeToISO(formData.ora_sfarsit),
         activ: formData.activ
@@ -265,8 +163,7 @@ console.log("PROGRAM LUCRU STRUCTURE:", programData.programLucru?.[0]); // Verif
       console.log("🔍 Frontend: Selected program ID:", selectedProgram?.id);
       console.log("🔍 Frontend: Request URL:", url);
       console.log("🔍 Frontend: Request method:", method);
-      console.log("🔍 Frontend: User ID:", formData.user_id);
-      console.log("🔍 Frontend: Mapped medic_info_id:", medicInfoId);
+      console.log("🔍 Frontend: Selected medic_info_id:", formData.medic_info_id);
       console.log("🔍 Frontend: Ora inceput (raw):", formData.ora_inceput);
       console.log("🔍 Frontend: Ora sfarsit (raw):", formData.ora_sfarsit);
       console.log("🔍 Frontend: Ora inceput (converted):", convertTimeToISO(formData.ora_inceput));
@@ -295,12 +192,12 @@ console.log("PROGRAM LUCRU STRUCTURE:", programData.programLucru?.[0]); // Verif
       if (programRes.ok) {
         const programData = await programRes.json();
         console.log("🔄 Frontend: Refreshed data after", isEdit ? "update" : "create/delete", ":", programData);
-        console.log("🔄 Frontend: Expected length after", isEdit ? "update" : "delete", ":", programLucru.length - (isEdit ? 0 : 1));
-        console.log("🔄 Frontend: Actual length after", isEdit ? "update" : "delete", ":", programData.programLucru?.length || 0);
+        console.log("🔄 Frontend: Expected length after", isEdit ? "update" : "create/delete", ":", programLucru.length - (isEdit ? 0 : 1));
+        console.log("🔄 Frontend: Actual length after", isEdit ? "update" : "create/delete", ":", programData.programLucru?.length || 0);
         
       const newProgramLucru = Array.isArray(programData)
-  ? programData
-  : Array.isArray(programData.programLucru)
+      ? programData
+      : Array.isArray(programData.programLucru)
     ? programData.programLucru
     : [];
 
@@ -314,7 +211,7 @@ setProgramLucru([...newProgramLucru]);
       // Reset form and close modal
       setFormData({
         user_id: '', // Gol la reset
-        medic_info_id: 0, // Va fi setat din mapare
+        medic_info_id: 0, // Reset la 0
         ora_inceput: '',
         ora_sfarsit: '',
         activ: true
@@ -331,18 +228,8 @@ setProgramLucru([...newProgramLucru]);
 
   const handleEdit = (program: ProgramLucru) => {
     setSelectedProgram(program);
-    
-    // Find user_id from medic_info_id using reverse mapping
-    let userId = '';
-    for (const [key, value] of medicInfoMap.entries()) {
-      if (value === program.medic_info_id) {
-        userId = key;
-        break;
-      }
-    }
-    
     setFormData({
-      user_id: userId, // Găsim user_id corespunzător
+      user_id: '', // Nu mai folosim user_id dar îl păstrăm pentru compatibilitate
       medic_info_id: program.medic_info_id,
       ora_inceput: formatTimeForInput(program.ora_inceput),
       ora_sfarsit: formatTimeForInput(program.ora_sfarsit),
@@ -525,15 +412,15 @@ setProgramLucru([...newProgramLucru]);
                   Medic
                 </label>
                 <select
-                  value={formData.user_id}
-                  onChange={(e) => setFormData({...formData, user_id: e.target.value})}
+                  value={formData.medic_info_id}
+                  onChange={(e) => setFormData({...formData, medic_info_id: parseInt(e.target.value) || 0})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Selectează un medic</option>
-                  {medici.map((medic) => (
+                  {mediciInfo.map((medic) => (
                     <option key={medic.id} value={medic.id}>
-                      {medic.username} ({medic.email})
+                      {medic.nume} {medic.prenume}
                     </option>
                   ))}
                 </select>
@@ -604,15 +491,15 @@ setProgramLucru([...newProgramLucru]);
                   Medic
                 </label>
                 <select
-                  value={formData.user_id}
-                  onChange={(e) => setFormData({...formData, user_id: e.target.value})}
+                  value={formData.medic_info_id}
+                  onChange={(e) => setFormData({...formData, medic_info_id: parseInt(e.target.value) || 0})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Selectează un medic</option>
-                  {medici.map((medic) => (
+                  {mediciInfo.map((medic) => (
                     <option key={medic.id} value={medic.id}>
-                      {medic.username} ({medic.email})
+                      {medic.nume} {medic.prenume}
                     </option>
                   ))}
                 </select>

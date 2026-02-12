@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Forward request to auth-server
-    const response = await fetch('http://localhost:4000/admin/program-lucru', {
+    // Forward request to resource server
+    const response = await fetch('http://localhost:5000/api/admin/program-lucru', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("🔍 Next.js API: Auth-server error response:", errorText);
+      console.error("🔍 Next.js API: Resource server error response:", errorText);
       throw new Error(`Failed to fetch program lucru: ${response.status}`);
     }
 
@@ -77,9 +77,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("🔍 Next.js API: Creating program lucru with data:", body);
     
-    console.log("🔍 Next.js API: About to send request to auth-server...");
+    console.log("🔍 Next.js API: About to send request to resource server...");
     
-    console.log("🔍 Next.js API: Fetch URL:", 'http://localhost:4000/admin/program-lucru');
+    console.log("🔍 Next.js API: Fetch URL:", 'http://localhost:5000/api/admin/program-lucru');
     console.log("🔍 Next.js API: Method: POST");
     console.log("🔍 Next.js API: Headers:", {
       'Content-Type': 'application/json',
@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
     console.log("🔍 Next.js API: Body:", JSON.stringify(body));
     
     try {
-      // Create program lucru in auth-server
-      const response = await fetch('http://localhost:4000/admin/program-lucru', {
+      // Create program lucru in resource server
+      const response = await fetch('http://localhost:5000/api/admin/program-lucru', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,21 +99,21 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(body),
       });
 
-      console.log("🔍 Next.js API: Request sent to auth-server, waiting for response...");
-      console.log("🔍 Next.js API: Auth-server response status:", response.status);
+      console.log("🔍 Next.js API: Request sent to resource server, waiting for response...");
+      console.log("🔍 Next.js API: Resource server response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("🔍 Next.js API: Auth-server error response:", errorText);
+        console.error("🔍 Next.js API: Resource server error response:", errorText);
         throw new Error(`Failed to create program lucru: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("🔍 Next.js API: Auth-server response data:", data);
+      console.log("🔍 Next.js API: Resource server response data:", data);
       
       // Check if response contains error
       if (data.error) {
-        console.error("🔍 Next.js API: Auth-server returned error:", data.error);
+        console.error("🔍 Next.js API: Resource server returned error:", data.error);
         return NextResponse.json(
           { error: data.error },
           { status: 400 }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       console.error("🔍 Next.js API: Fetch error details:", fetchError instanceof Error ? fetchError.message : 'Unknown error');
       
       return NextResponse.json(
-        { error: 'Failed to connect to auth-server' },
+        { error: 'Failed to connect to resource server' },
         { status: 500 }
       );
     }

@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Forward request to resource server
-    const response = await fetch('http://localhost:5000/api/admin/oauth-users-merged', {
+    // Forward request to resource server with Authorization header
+    const response = await fetch('http://localhost:5000/api/admin/logs', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -27,11 +27,19 @@ export async function GET(request: NextRequest) {
       credentials: 'include',
     });
 
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const errorText = await response.text();
+      console.error('Resource server returned non-JSON response:', errorText);
+      return NextResponse.json(
+        { error: 'Resource server error', details: errorText },
+        { status: response.status }
+      );
+    }
+
     const data = await response.json();
-    console.log('🔍 OAuth Users Merged API Response from resource server:', data);
-    
-    // The resource server already returns { users: oauthUsers } 
-    // so we can just forward it directly
+    // Return logs directly (resource server returns array)
     return NextResponse.json(data, { status: response.status });
 
   } catch (error) {

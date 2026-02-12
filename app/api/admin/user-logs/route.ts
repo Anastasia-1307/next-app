@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Forward request to auth server with Authorization header
-    const response = await fetch('http://localhost:4000/admin/activity-logs', {
+    // Forward request to resource server with Authorization header
+    const response = await fetch('http://localhost:5000/api/admin/user-logs', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -37,7 +37,13 @@ export default function SpecialitatiManagement({ initialSpecialitati }: { initia
   const fetchSpecialitati = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/specialitati');
+      
+      const response = await fetch('/api/admin/specialitati', {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       
       console.log('🔍 SPECIALITATI DATA RECEIVED:', data);
@@ -64,7 +70,7 @@ export default function SpecialitatiManagement({ initialSpecialitati }: { initia
       const response = await fetch('/api/admin/specialitati', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData),
       });
@@ -90,7 +96,7 @@ export default function SpecialitatiManagement({ initialSpecialitati }: { initia
       const response = await fetch(`/api/admin/specialitati/${selectedSpecialitate.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData),
       });
@@ -115,7 +121,7 @@ export default function SpecialitatiManagement({ initialSpecialitati }: { initia
     
     try {
       const response = await fetch(`/api/admin/specialitati/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE'
       });
 
       if (response.ok) {

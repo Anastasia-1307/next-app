@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Forward request to resource server
-    const response = await fetch('http://localhost:5000/api/admin/oauth-users-merged', {
+    // Fetch pacienti from resource server (combines users and oauth_users)
+    const response = await fetch('http://localhost:5000/api/medic/pacienti', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -28,10 +28,8 @@ export async function GET(request: NextRequest) {
     });
 
     const data = await response.json();
-    console.log('🔍 OAuth Users Merged API Response from resource server:', data);
+    console.log('🔍 Pacienti API Response:', data);
     
-    // The resource server already returns { users: oauthUsers } 
-    // so we can just forward it directly
     return NextResponse.json(data, { status: response.status });
 
   } catch (error) {

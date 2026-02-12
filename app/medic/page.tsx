@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import LogoutButton from "@/components/layout/LogoutButton";
+import LogoutButton from '@/components/layout/LogoutButton';
+import { getClientAuthToken } from '@/lib/client-cookie-utils';
 
 interface Programare {
   id: string;
-  pacient_id: string;
-  medic_id: string;
   data_programare: string;
   ora_programare: string;
   status: 'programat' | 'confirmat' | 'anulat';
-  specialitate?: string;
   detalii?: string;
 }
 
@@ -25,22 +23,14 @@ interface MedicInfo {
   id: string;
   user_id: string;
   username: string;
-  specialitate: string;
   experienta: number;
   telefon?: string;
-}
-
-interface Specialitate {
-  id: string;
-  nume: string;
-  descriere?: string;
 }
 
 export default function MedicPage() {
   const [programari, setProgramari] = useState<Programare[]>([]);
   const [pacienti, setPacienti] = useState<Pacient[]>([]);
   const [medicInfo, setMedicInfo] = useState<MedicInfo | null>(null);
-  const [specialitati, setSpecialitati] = useState<Specialitate[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("programari");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -48,20 +38,35 @@ export default function MedicPage() {
 
   // Fetch data from API
   useEffect(() => {
+    console.log('🔍 MEDIC PAGE: useEffect started');
     const fetchData = async () => {
       try {
-        const token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('auth_token='))
-          ?.split('=')[1];
+        console.log('🔍 MEDIC PAGE: Starting token extraction...');
+        
+        // Get token from API endpoint (since cookies are httpOnly)
+        const tokenRes = await fetch('/api/auth/token');
+        
+        if (!tokenRes.ok) {
+          console.log('🔍 MEDIC PAGE: Failed to get token from API');
+          return;
+        }
+        
+        const tokenData = await tokenRes.json();
+        const token = tokenData.token;
+        
+        console.log('🔍 MEDIC PAGE: Token extracted:', token ? 'YES' : 'NO');
+        if (!token) {
+          console.log('🔍 MEDIC PAGE: No token found, returning');
+          return;
+        }
 
-        if (!token) return;
-
+        console.log('🔍 MEDIC PAGE: Fetching medic info...');
         // Fetch medic info from AUTH-SERVER (not resource-server)
         const medicRes = await fetch('http://localhost:4000/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
+        console.log('🔍 MEDIC PAGE: Medic info response status:', medicRes.status);
         if (!medicRes.ok) {
           console.error('Failed to fetch medic info:', medicRes.status, medicRes.statusText);
           return;
@@ -70,8 +75,9 @@ export default function MedicPage() {
         const medicData = await medicRes.json();
         setMedicInfo(medicData);
 
-        // Fetch programari from AUTH-SERVER
-        const programariRes = await fetch('http://localhost:4000/admin/programari', {
+        // Fetch programari
+        console.log('🔍 MEDIC PAGE: Fetching programari...');
+        const programariRes = await fetch('http://localhost:5000/api/medic/appointments', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -81,44 +87,13 @@ export default function MedicPage() {
         }
 
         const programariData = await programariRes.json();
-        setProgramari(programariData.map((p: any) => ({
+        console.log('🔍 Programari data from backend:', programariData);
+        const programariArray = Array.isArray(programariData) ? programariData : programariData.appointments || [];
+        console.log('🔍 Programari array:', programariArray);
+        setProgramari(programariArray.map((p: any) => ({
           ...p,
           status: p.status as 'programat' | 'confirmat' | 'anulat'
         })));
-
-        // Fetch pacienti from AUTH-SERVER
-        const pacientiRes = await fetch('http://localhost:4000/admin/users', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!pacientiRes.ok) {
-          console.error('Failed to fetch pacienti:', pacientiRes.status, pacientiRes.statusText);
-          return;
-        }
-
-        const pacientiData = await pacientiRes.json();
-        if (!pacientiData || !Array.isArray(pacientiData)) {
-          console.error('Invalid response data for pacienti:', pacientiData);
-          return;
-        }
-        setPacienti(pacientiData);
-
-        // Fetch specialitati
-        const specialitatiRes = await fetch('http://localhost:5000/api/specialitati', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!specialitatiRes.ok) {
-          console.error('Failed to fetch specialitati:', specialitatiRes.status, specialitatiRes.statusText);
-          return;
-        }
-
-        const specialitatiData = await specialitatiRes.json();
-        if (!specialitatiData || !Array.isArray(specialitatiData)) {
-          console.error('Invalid response data for specialitati:', specialitatiData);
-          return;
-        }
-        setSpecialitati(specialitatiData);
 
       } catch (error) {
         console.error('Failed to fetch medic data:', error);
@@ -127,17 +102,22 @@ export default function MedicPage() {
       }
     };
 
+    // Fetch data only once on mount
     fetchData();
   }, []);
 
   const handleCreateProgramare = async (formData: any) => {
     try {
-      const token = document.cookie
-        .split('; ')
-          .find(row => row.startsWith('auth_token='))
-          ?.split('=')[1];
+      // Get token from API endpoint
+      const tokenRes = await fetch('/api/auth/token');
+      if (!tokenRes.ok) {
+        alert('Eroare la obținerea token-ului');
+        return;
+      }
+      const tokenData = await tokenRes.json();
+      const token = tokenData.token;
 
-      const response = await fetch('http://localhost:5000/api/medic/programari', {
+      const response = await fetch('http://localhost:5000/api/medic/appointments', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -161,13 +141,17 @@ export default function MedicPage() {
 
   const handleUpdateStatus = async (programareId: string, status: Programare['status']) => {
     try {
-      const token = document.cookie
-        .split('; ')
-          .find(row => row.startsWith('auth_token='))
-          ?.split('=')[1];
+      // Get token from API endpoint
+      const tokenRes = await fetch('/api/auth/token');
+      if (!tokenRes.ok) {
+        alert('Eroare la obținerea token-ului');
+        return;
+      }
+      const tokenData = await tokenRes.json();
+      const token = tokenData.token;
 
-      await fetch(`http://localhost:5000/api/medic/programari/${programareId}`, {
-        method: 'PATCH',
+      await fetch(`http://localhost:5000/api/medic/appointments/${programareId}/status`, {
+        method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -191,7 +175,7 @@ export default function MedicPage() {
         <LogoutButton />
       </div>
       
-      <p className="mb-6 text-gray-600">Bun venit, {medicInfo?.username}!</p>
+      <p className="mb-6 text-gray-600">Bun venit!</p>
       
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
@@ -245,55 +229,58 @@ export default function MedicPage() {
                     <form onSubmit={(e) => {
                       e.preventDefault();
                       const target = e.target as typeof e.target & {
-                        pacient_id: { value: string };
+                        pacient_nume: { value: string };
                         data_programare: { value: string };
                         ora_programare: { value: string };
-                        specialitate: { value: string };
                         detalii: { value: string };
                       };
                       const formData = {
-                        pacient_id: target.pacient_id.value,
-                        data_programare: target.data_programare.value,
-                        ora_programare: target.ora_programare.value,
-                        specialitate: target.specialitate.value,
-                        detalii: target.detalii.value
+                        pacient_nume: target.pacient_nume?.value || '',
+                        date: target.data_programare?.value || '',
+                        time: target.ora_programare?.value || '',
+                        notes: target.detalii?.value || ''
                       };
+                      console.log('🔍 Form data:', formData);
                       handleCreateProgramare(formData);
                     }}>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Pacient ID</label>
-                          <select name="pacient_id" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            <option value="">Selectează pacient</option>
-                            {pacienti.map((pacient) => (
-                              <option key={pacient.id} value={pacient.id}>
-                                {pacient.username} ({pacient.email})
-                              </option>
-                            ))}
-                          </select>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Pacient Nume</label>
+                          <input 
+                            type="text" 
+                            name="pacient_nume" 
+                            required 
+                            className="mt-1 block w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Introduceți numele pacientului..."
+                          />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Data Programare</label>
-                          <input type="date" name="data_programare" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Data Programare</label>
+                          <input 
+                            type="date" 
+                            name="data_programare" 
+                            required 
+                            className="mt-1 block w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                          />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Ora Programare</label>
-                          <input type="time" name="ora_programare" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Ora Programare</label>
+                          <input 
+                            type="time" 
+                            name="ora_programare" 
+                            required 
+                            className="mt-1 block w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                          />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Specialitate</label>
-                          <select name="specialitate" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            <option value="">Selectează specialitate</option>
-                            {specialitati.map((spec) => (
-                              <option key={spec.id} value={spec.id}>
-                                {spec.nume}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                    
                         <div>
                           <label className="block text-sm font-medium text-gray-700">Detalii</label>
-                          <textarea name="detalii" rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                          <textarea 
+                            name="detalii" 
+                            rows={4}
+                            className="mt-1 block w-full px-4 py-3 text-lg border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Introduceți detalii suplimentare..."
+                          />
                         </div>
                       </div>
                       <div className="flex justify-end space-x-3 mt-4">
@@ -322,21 +309,17 @@ export default function MedicPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pacient</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ora</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialitate</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalii</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acțiuni</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {programari.map((programare) => (
-                      <tr key={programare.id}>
+                      <tr key={programare.id || `programare-${Math.random()}`}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{programare.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {pacienti.find(p => p.id === programare.pacient_id)?.username || 'N/A'}
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{programare.data_programare}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{programare.ora_programare}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -349,7 +332,7 @@ export default function MedicPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {specialitati.find(s => s.id === programare.specialitate)?.nume || '-'}
+                          {programare.detalii || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <select
@@ -388,7 +371,7 @@ export default function MedicPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {pacienti.map((pacient) => (
-                      <tr key={pacient.id}>
+                      <tr key={pacient.id || `pacient-${Math.random()}`}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pacient.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pacient.username}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pacient.email}</td>

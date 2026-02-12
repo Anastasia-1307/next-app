@@ -13,16 +13,26 @@ interface UserLog {
   created_at: string;
 }
 
-export default function UserLogsManagement() {
-  const [logs, setLogs] = useState<UserLog[]>([]);
+export default function UserLogsManagement({ initialLogs }: { initialLogs?: UserLog[] }) {
+  const [logs, setLogs] = useState<UserLog[]>(initialLogs || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<UserLog | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
+  // Debug: Log what we receive
+  console.log('🔍 UserLogsManagement - initialLogs:', initialLogs);
+  console.log('🔍 UserLogsManagement - initialLogs type:', typeof initialLogs);
+  console.log('🔍 UserLogsManagement - initialLogs isArray:', Array.isArray(initialLogs));
+  console.log('🔍 UserLogsManagement - logs state:', logs);
+  console.log('🔍 UserLogsManagement - logs isArray:', Array.isArray(logs));
+
+  // Fetch data only if no initial data provided
   useEffect(() => {
-    fetchLogs();
-  }, []);
+    if (!initialLogs || initialLogs.length === 0) {
+      fetchLogs();
+    }
+  }, [initialLogs]);
 
   const fetchLogs = async () => {
     try {
@@ -32,14 +42,23 @@ export default function UserLogsManagement() {
       });
       const data = await response.json();
       
+      console.log('🔍 UserLogsManagement - fetchLogs response:', data);
+      console.log('🔍 UserLogsManagement - fetchLogs data.logs:', data.logs);
+      console.log('🔍 UserLogsManagement - fetchLogs isArray:', Array.isArray(data.logs));
+      
       if (response.ok) {
-        setLogs(data.logs || []);
+        // Handle both direct array and nested object formats
+        const logsArray = Array.isArray(data) ? data : (data.logs || []);
+        console.log('🔍 UserLogsManagement - Setting logs to:', logsArray);
+        setLogs(logsArray);
       } else {
         setError(data.error || 'Failed to fetch user logs');
+        setLogs([]); // Ensure logs is always an array
       }
     } catch (error) {
       console.error('Error fetching user logs:', error);
       setError('Failed to fetch user logs');
+      setLogs([]); // Ensure logs is always an array
     } finally {
       setLoading(false);
     }
@@ -116,7 +135,7 @@ export default function UserLogsManagement() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {logs.map((log) => (
+              {Array.isArray(logs) && logs.map((log) => (
                 <tr key={log.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatDate(log.created_at)}

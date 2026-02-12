@@ -20,7 +20,9 @@ interface UserFormData {
 }
 
 export default function UserManagement({ users: initialUsers = [] }: { users?: User[] }) {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  // Filter to only show classic users (non-OAuth)
+  const classicUsers = initialUsers.filter(user => user.userType === 'classic');
+  const [users, setUsers] = useState<User[]>(classicUsers);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -85,27 +87,20 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
   // Fetch users on component mount - only if no initial users provided
   useEffect(() => {
     if (initialUsers.length === 0) {
-      fetchUsers();
+      // Don't fetch automatically - let admin page handle data fetching
+      console.log('🔍 UserManagement: No initial users provided, but not fetching to avoid mixing data');
+    } else {
+      // Filter initial users to only show classic users
+      const filteredUsers = initialUsers.filter(user => user.userType !== 'oauth');
+      setUsers(filteredUsers);
     }
   }, [initialUsers]);
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/admin/users', {
-        credentials: 'include'
-      });
-      const data = await response.json();
-      
-      if (response.ok) {
-        setUsers(data.users || []);
-      } else {
-        setError(data.error || 'Failed to fetch users');
-      }
-    } catch (err) {
-      setError('Error fetching users');
-    } finally {
-      setLoading(false);
+  const refreshUsers = () => {
+    // Trigger a re-render by filtering the initial users again
+    if (initialUsers.length > 0) {
+      const filteredUsers = initialUsers.filter(user => user.userType !== 'oauth');
+      setUsers(filteredUsers);
     }
   };
 
@@ -129,7 +124,7 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
       });
 
       if (response.ok) {
-        await fetchUsers();
+        refreshUsers();
         setIsCreateModalOpen(false);
         setIsEditModalOpen(false);
         setSelectedUser(null);
@@ -168,7 +163,7 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
       });
 
       if (response.ok) {
-        await fetchUsers();
+        refreshUsers();
         setError(null);
       } else {
         const errorData = await response.json();
@@ -191,7 +186,7 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
     <div className="space-y-4">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Management Utilizatori</h3>
+        <h3 className="text-lg font-semibold">Management Utilizatori Classic</h3>
        
       </div>
 
@@ -210,6 +205,7 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acțiuni</th>
@@ -221,6 +217,7 @@ export default function UserManagement({ users: initialUsers = [] }: { users?: U
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
+              
                <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       user.role === 'admin' ? 'bg-purple-100 text-purple-800' :

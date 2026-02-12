@@ -30,8 +30,8 @@ interface UserFormData {
   role: string;
 }
 
-export default function OAuthUsersManagement() {
-  const [oauthUsers, setOAuthUsers] = useState<OAuthUser[]>([]);
+export default function OAuthUsersManagement({ initialOAuthUsers }: { initialOAuthUsers?: OAuthUser[] }) {
+  const [oauthUsers, setOAuthUsers] = useState<OAuthUser[]>(initialOAuthUsers || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -45,7 +45,29 @@ export default function OAuthUsersManagement() {
     password: ''
   });
 
-  // Get current user info
+  // Debug: Log what we receive
+  console.log('🔍 OAuthUsersManagement - initialOAuthUsers:', initialOAuthUsers);
+  console.log('🔍 OAuthUsersManagement - initialOAuthUsers length:', initialOAuthUsers?.length || 0);
+  console.log('🔍 OAuthUsersManagement - initialOAuthUsers type:', typeof initialOAuthUsers);
+  console.log('🔍 OAuthUsersManagement - initialOAuthUsers isArray:', Array.isArray(initialOAuthUsers));
+
+  // Update oauthUsers when initialOAuthUsers changes
+  useEffect(() => {
+    if (initialOAuthUsers) {
+      setOAuthUsers(initialOAuthUsers);
+      console.log('🔍 OAuthUsersManagement - Updated oauthUsers from props:', initialOAuthUsers.length);
+    }
+  }, [initialOAuthUsers]);
+
+  // Fetch data only if no initial data provided
+  useEffect(() => {
+    if (!initialOAuthUsers || initialOAuthUsers.length === 0) {
+      console.log('🔍 OAuthUsersManagement - initialOAuthUsers is empty, fetching from API...');
+      fetchOAuthUsers();
+    }
+  }, [initialOAuthUsers]);
+
+  // Get current user info (for admin checks)
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
@@ -55,7 +77,7 @@ export default function OAuthUsersManagement() {
         
         if (response.ok) {
           const userData = await response.json();
-          console.log('🔍 DEBUG OAuth: Raw API response:', userData);
+          console.log('🔍 DEBUG OAuth: Current user data:', userData);
           setCurrentUser({
             id: userData.sub, // API-ul returnează 'sub' în loc de 'id'
             email: userData.email,
@@ -83,17 +105,22 @@ export default function OAuthUsersManagement() {
     return result;
   };
 
+  // Fetch data only if no initial data provided
   useEffect(() => {
-    fetchOAuthUsers();
-  }, []);
+    if (!initialOAuthUsers || initialOAuthUsers.length === 0) {
+      fetchOAuthUsers();
+    }
+  }, [initialOAuthUsers]);
 
  const fetchOAuthUsers = async () => {
   try {
     setLoading(true);
     setError(null);
 
-    const response = await fetch('/api/admin/oauth-users', {
-      credentials: 'include',
+    const response = await fetch('/api/admin/oauth-users-merged', {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     const data = await response.json();
@@ -140,8 +167,7 @@ export default function OAuthUsersManagement() {
 
     try {
       const response = await fetch(`/api/admin/oauth-users-merged/${userId}`, {
-        method: 'DELETE',
-        credentials: 'include',
+        method: 'DELETE'
       });
 
       if (response.ok) {
@@ -168,9 +194,8 @@ export default function OAuthUsersManagement() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        credentials: 'include',
         body: JSON.stringify(formData),
       });
 
@@ -199,7 +224,7 @@ export default function OAuthUsersManagement() {
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">Gestionarea userilor Oauth </h3>
+          <h3 className="text-lg font-medium text-gray-900">Gestionarea userilor OAuth </h3>
         
         </div>
       </div>
