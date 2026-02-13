@@ -182,7 +182,7 @@ export default function MedicPage() {
         <nav className="-mb-px flex space-x-8">
           {[
             { id: 'programari', label: 'Programări', count: programari.length },
-            { id: 'pacienti', label: 'Pacienți', count: pacienti.length }
+         
           ].map((tab) => (
             <button
               key={tab.id}
@@ -353,36 +353,7 @@ export default function MedicPage() {
             </div>
           )}
 
-          {/* Pacienți Tab */}
-          {activeTab === 'pacienti' && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Pacienți Asignați</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nume</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Creat</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {pacienti.map((pacient) => (
-                      <tr key={pacient.id || `pacient-${Math.random()}`}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pacient.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pacient.username}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pacient.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(pacient.created_at).toLocaleDateString('ro-RO')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+        
         </>
       )}
     </div>

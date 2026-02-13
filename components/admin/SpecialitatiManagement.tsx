@@ -27,43 +27,37 @@ export default function SpecialitatiManagement({ initialSpecialitati }: { initia
     descriere: ''
   });
 
-  // Fetch data only if no initial data provided
-  useEffect(() => {
-    if (!initialSpecialitati || initialSpecialitati.length === 0) {
-      fetchSpecialitati();
-    }
-  }, []);
+// Fetch data only if no initial data provided
+useEffect(() => {
+  if (!initialSpecialitati || initialSpecialitati.length === 0) {
+    fetchSpecialitati();
+  }
+}, []);
 
-  const fetchSpecialitati = async () => {
-    try {
-      setLoading(true);
-      
-      const response = await fetch('/api/admin/specialitati', {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const data = await response.json();
-      
-      console.log('🔍 SPECIALITATI DATA RECEIVED:', data);
-      console.log('🔍 RESPONSE STATUS:', response.status);
-      console.log('🔍 IS ARRAY:', Array.isArray(data));
-      console.log('🔍 SPECIALITATI STATE AFTER SET:', specialitati.length);
-      
-      if (response.ok) {
-        setSpecialitati(Array.isArray(data) ? data : []);
-      } else {
-        setError(data.error || 'Failed to fetch specialități');
-      }
-    } catch (error) {
-      console.error('Error fetching specialități:', error);
-      setError('Failed to fetch specialități');
-    } finally {
-      setLoading(false);
-      console.log('🔍 SPECIALITATI FINAL STATE:', specialitati.length);
+const fetchSpecialitati = async () => {
+  try {
+    setLoading(true);
+
+    const response = await fetch('/api/admin/specialitati', {
+      method: 'GET',
+     credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('API error response:', text);
+      throw new Error(`Request failed: ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+    setSpecialitati(data);
+
+  } catch (error) {
+    console.error('Failed to fetch specialitati:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleCreate = async () => {
     try {
@@ -184,7 +178,7 @@ export default function SpecialitatiManagement({ initialSpecialitati }: { initia
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {specialitati.map((specialitate) => (
+              {Array.isArray(specialitati) && specialitati.map((specialitate) => (
                 <tr key={specialitate.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{specialitate.id}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{specialitate.nume}</td>
@@ -220,7 +214,7 @@ export default function SpecialitatiManagement({ initialSpecialitati }: { initia
             </tbody>
           </table>
           
-          {specialitati.length === 0 && (
+          {specialitati.length === 0 && Array.isArray(specialitati) && (
             <div className="text-center py-8">
               <p className="text-gray-500">Nu există specialități</p>
             </div>

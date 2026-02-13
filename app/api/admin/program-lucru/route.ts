@@ -39,10 +39,13 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     console.log("🔍 Next.js API: Successfully fetched program lucru data:", data);
-    console.log("🔍 Next.js API: ProgramLucru array:", data.programLucru);
-    console.log("🔍 Next.js API: ProgramLucru array length:", data.programLucru?.length || 0);
     
-    return NextResponse.json(data);
+    // Server-ul returnează direct array-ul, nu obiect cu programLucru
+    const programLucruArray = Array.isArray(data) ? data : data.programLucru || [];
+    console.log("🔍 Next.js API: ProgramLucru array:", programLucruArray);
+    console.log("🔍 Next.js API: ProgramLucru array length:", programLucruArray.length);
+    
+    return NextResponse.json(programLucruArray);
 
   } catch (error) {
     console.error('🔍 Next.js API: API proxy error:', error);

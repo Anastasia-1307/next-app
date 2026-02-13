@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.slice(7);
     
-    // Forward request to auth-server
-    const response = await fetch("http://localhost:4000/patient/appointments", {
+    // Forward request to resource server
+    const response = await fetch("http://localhost:5000/api/pacient/programari", {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
     const token = authHeader.slice(7);
     const body = await request.json();
     
-    // Forward request to auth-server
-    const response = await fetch("http://localhost:4000/patient/appointments", {
+    // Forward request to resource server
+    const response = await fetch("http://localhost:5000/api/pacient/programari", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,

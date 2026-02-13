@@ -24,8 +24,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     
     console.log("🔍 Next.js API: Updating program lucru ID:", id, "with data:", body);
     
-    // Update program lucru in auth-server
-    const response = await fetch(`http://localhost:4000/admin/program-lucru/${id}`, {
+    // Update program lucru in resource server
+    const response = await fetch(`http://localhost:5000/api/admin/program-lucru/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -77,8 +77,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params;
     console.log("🔍 Next.js API: Deleting program lucru ID:", id);
     
-    // Delete program lucru in auth-server
-    const response = await fetch(`http://localhost:4000/admin/program-lucru/${id}`, {
+    // Delete program lucru in resource server
+    const response = await fetch(`http://localhost:5000/api/admin/program-lucru/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
