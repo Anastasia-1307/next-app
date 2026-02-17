@@ -15,6 +15,8 @@ interface Programare {
 
   id: string;
 
+  user_id?: string | null; // Opțional - poate fi null pentru programări create de medic
+
   medic_id: string;
 
   data_programare: string;
@@ -731,7 +733,18 @@ export default function PacientPage() {
                       <tr key={programare.id || `programare-${index}`}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{programare.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {programare.medic_name || programare.serviciu}
+                          {(() => {
+                            // Parse serviciu format: "Nume Medic - Specialitate - Ora" SAU "Nume Pacient - Specialitate - Ora"
+                            const serviciuParts = (programare.serviciu || '').split(' - ');
+                            
+                            // Dacă există user_id, e pacient → afișează numele pacientului
+                            // Dacă nu există user_id, e programare creată de medic → afișează numele medicului
+                            if (programare.user_id) {
+                              return serviciuParts[2] || 'N/A'; // Numele pacientului (al 3-lea element)
+                            } else {
+                              return serviciuParts[0] || 'N/A'; // Numele medicului (primul element)
+                            }
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{programare.data_programare}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{programare.ora_programare}</td>

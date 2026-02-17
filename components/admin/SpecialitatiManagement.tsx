@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getClientTokenFromAPI } from '@/lib/client-token-utils';
 
 interface Specialitate {
   id: number;
@@ -61,9 +62,12 @@ const fetchSpecialitati = async () => {
 
   const handleCreate = async () => {
     try {
-      const response = await fetch('/api/admin/specialitati', {
+      const token = await getClientTokenFromAPI();
+      const response = await fetch('http://localhost:5000/api/admin/specialitati', {
         method: 'POST',
+        credentials: 'include',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData),
@@ -87,13 +91,23 @@ const fetchSpecialitati = async () => {
     if (!selectedSpecialitate) return;
     
     try {
-      const response = await fetch(`/api/admin/specialitati/${selectedSpecialitate.id}`, {
+      console.log('🔍 handleUpdate - Starting update for ID:', selectedSpecialitate.id);
+      const token = await getClientTokenFromAPI();
+      console.log('🔍 handleUpdate - Token:', token?.substring(0, 50) + '...');
+      console.log('🔍 handleUpdate - Form data:', formData);
+      
+      const response = await fetch(`http://localhost:5000/api/admin/specialitati/${selectedSpecialitate.id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData),
       });
+      
+      console.log('🔍 handleUpdate - Response status:', response.status);
+      console.log('🔍 handleUpdate - Response ok:', response.ok);
 
       if (response.ok) {
         setIsEditModalOpen(false);
@@ -114,8 +128,14 @@ const fetchSpecialitati = async () => {
     if (!confirm('Ești sigur că vrei să ștergi această specialitate?')) return;
     
     try {
-      const response = await fetch(`/api/admin/specialitati/${id}`, {
-        method: 'DELETE'
+      const token = await getClientTokenFromAPI();
+      const response = await fetch(`http://localhost:5000/api/admin/specialitati/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.ok) {
