@@ -40,7 +40,7 @@ services:
 
   resource-server:
     build:
-      context: ../resource-server/app
+      context: ../resource-server
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres?schema=public
@@ -53,7 +53,7 @@ services:
     ports:
       - 5000:5000
     volumes:
-      - ../resource-server/app:/usr/src/app
+      - ../resource-server:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
       - postgres
