@@ -1,4 +1,5 @@
 services:
+  image: nastea13/next-app:latest
   next:
     build:
       context: .
