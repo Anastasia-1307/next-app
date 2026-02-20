@@ -1,23 +1,28 @@
-# syntax=docker/dockerfile:1
 
-ARG NODE_VERSION=24.13.0
 
-FROM node:${NODE_VERSION}-alpine
+# Folosim imaginea oficială Bun pe bază de Alpine pentru dimensiune minimă
+FROM oven/bun:1.1-alpine
 
-# Install Bun
-RUN npm install -g bun
-
+# Setăm directorul de lucru
 WORKDIR /usr/src/app
 
-# Install deps first (cache friendly)
-COPY package.json ./
-RUN bun install
+# Instalăm dependențele de sistem necesare pentru runtime-uri moderne (opțional, dar recomandat)
+RUN apk add --no-cache libc6-compat
 
-# Copy source
+# Copiem fișierele de dependințe pentru a profita de cache-ul Docker
+COPY package.json bun.lockb* ./
+
+# Instalăm dependențele folosind Bun
+RUN bun install --frozen-lockfile
+
+# Copiem restul codului sursă
 COPY . .
 
-# Expose the port
+# Expunem portul aplicației
 EXPOSE 3000
 
-# Run the application in development mode
+# Setăm variabila de mediu pentru dezvoltare
+ENV NODE_ENV=development
+
+# Pornim aplicația
 CMD ["bun", "run", "dev"]
