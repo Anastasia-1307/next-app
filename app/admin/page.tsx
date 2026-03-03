@@ -84,6 +84,7 @@ interface Programare {
   data_programare: string;
   created_at: string;
   updated_at: string;
+  status: string;
 }
 
 interface PasswordResetToken {
@@ -336,7 +337,7 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(programare.data_programare).toLocaleString('ro-RO')}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                          Programat
+                         {programare.status}
                         </span>
                       </td>
                     </tr>
